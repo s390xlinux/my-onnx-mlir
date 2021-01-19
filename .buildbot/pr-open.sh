@@ -1,5 +1,4 @@
-#!/bin/bash
-set -ex
+#!/bin/bash -ex
 
 # This script is run by Jenkin Generic Webhook Trigger plugin when one of
 # the following events happens:
@@ -11,18 +10,19 @@ set -ex
 #
 # All events must be initiated by one of the whitelisted admins.
 #
-# It expects the following env vars to be set when invoked:
+# The following parameters are passed in:
 #
-#   GITHUB_JENKINS_DROID_TOKEN
-#   DOCKERHUB_USERNAME
-#   PULL_REQUST_NUMBER
+# $1: dockerhub user name
+# $2: github personal access token
+# $3: github pull request number
+#
 
 # Cleanup dangling images and containers from a previous failed build
 # $1: pull request number
 function cleanup_dangling() {
   ids=$(docker images -q \
                --filter dangling=true \
-	       --filter label=pull_request_number=$1)
+	       --filter label=onnx_mlir_pr_number=$1)
   for id in ${ids}; do
     docker rm -f $(docker ps -aq --filter ancestor=${id}) || true
   done
@@ -73,15 +73,15 @@ function get_image_label() {
 #
 # We first look for an image
 #
-#    ${DOCKERHUB_USERNAME}/onnx-mlir-llvm-{static|shared}:${PULL_REQUEST_NUMBER}
+#    ${DOCKERHUB_USER_NAME}/onnx-mlir-llvm-{static|shared}:${ONNX_MLIR_PR_NUMBER}
 #
 # with the expected llvm-project commit sha1 and Dockerfile.llvm-project file sha1.
 # If it's found, we can just use it. Otherwise, we try to pull
 #
-#    ${DOCKERHUB_USERNAME}/onnx-mlir-llvm-{static|shared}:latest
+#    ${DOCKERHUB_USER_NAME}/onnx-mlir-llvm-{static|shared}:latest
 #
 # If the pulled image has the expected llvm-project commit hash, we tag the
-# pulled image with ${PULL_REQUEST_NUMBER} and we use it.
+# pulled image with ${ONNX_MLIR_PR_NUMBER} and we use it.
 #
 # If the pull didn't work, we will build one from scratch.
 
@@ -102,45 +102,45 @@ function setup_private_llvm() {
     # First try to pull one and see if it's usable, ignore pull error
     docker pull ${image_name}:latest || true
 
-    pulled_llvm_project_sha1=""
-    pulled_llvm_project_sha1_date=""
-    pulled_llvm_dockerfile_sha1=""
-    pulled_image_id=$(get_image_id ${image_name} "latest")
+    remote_llvm_project_sha1=""
+    remote_llvm_project_sha1_date=""
+    remote_llvm_dockerfile_sha1=""
+    remote_image_id=$(get_image_id ${image_name} "latest")
 
     # If pull successful, get llvm-project commit sha1 and date, and
     # Dockerfile.llvm-project sha1.
-    if [ "${pulled_image_id}" != "" ]; then
-      pulled_llvm_project_sha1=$(get_image_label \
-                                   ${pulled_image_id} "llvm_project_sha1")
-      pulled_llvm_project_sha1_date=$(get_image_label \
-                                        ${pulled_image_id} "llvm_project_sha1_date")
-      pulled_llvm_dockerfile_sha1=$(get_image_label \
-                                      ${pulled_image_id} "llvm_dockerfile_sha1")
+    if [ "${remote_image_id}" != "" ]; then
+      remote_llvm_project_sha1=$(get_image_label \
+                                   ${remote_image_id} "llvm_project_sha1")
+      remote_llvm_project_sha1_date=$(get_image_label \
+                                        ${remote_image_id} "llvm_project_sha1_date")
+      remote_llvm_dockerfile_sha1=$(get_image_label \
+                                      ${remote_image_id} "llvm_dockerfile_sha1")
     fi
 
     # Pulled image has expected llvm-project commit sha1 and
     # Dockerfile.llvm-project sha1, tag it with pull request number
     # for our private use.
-    if [ "${pulled_llvm_project_sha1}" = \
+    if [ "${remote_llvm_project_sha1}" = \
          "${EXPECTED_LLVM_PROJECT_SHA1}" ] &&
-       [ "${pulled_llvm_dockerfile_sha1}" = \
+       [ "${remote_llvm_dockerfile_sha1}" = \
          "${EXPECTED_LLVM_DOCKERFILE_SHA1}" ]; then
-      docker tag ${pulled_image_id} ${image_name}:${image_tag}
+      docker tag ${remote_image_id} ${image_name}:${image_tag}
 
     # Pulled image has an llvm-project commit hash date earlier than
     # what we expect, so we will build one with the newer commit sha1,
     # regardless of Dockerfile.llvm-project sha1 being expected or not.
     #
-    # Note that if pull failed and pulled_llvm_project_sha1_date is
+    # Note that if pull failed and remote_llvm_project_sha1_date is
     # empty, the comparison will be true.
-    elif [[ "${pulled_llvm_project_sha1_date}" < \
+    elif [[ "${remote_llvm_project_sha1_date}" < \
             "${EXPECTED_LLVM_PROJECT_SHA1_DATE}" ]]; then
       docker build -t ${image_name}:${image_tag} \
              --build-arg BUILD_SHARED_LIBS=${BUILD_SHARED_LIBS[${image_name}]} \
              --build-arg LLVM_PROJECT_SHA1=${EXPECTED_LLVM_PROJECT_SHA1} \
              --build-arg LLVM_PROJECT_SHA1_DATE=${EXPECTED_LLVM_PROJECT_SHA1_DATE} \
 	     --build-arg LLVM_DOCKERFILE_SHA1=${EXPECTED_LLVM_DOCKERFILE_SHA1} \
-             --build-arg PULL_REQUEST_NUMBER=${PULL_REQUEST_NUMBER} \
+             --build-arg ONNX_MLIR_PR_NUMBER=${ONNX_MLIR_PR_NUMBER} \
              -f docker/Dockerfile.llvm-project .
 
     # Pulled image has an llvm-project commit hash date later than
@@ -148,10 +148,10 @@ function setup_private_llvm() {
     # the build, regardless of Dockerfile.llvm-project sha1 being
     # expected or not.
     else
-      echo "pulled   ${image_name}:latest"
-      echo "  llvm_project_sha1      = ${pulled_llvm_project_sha1}"
-      echo "  llvm_project_sha1 date = ${pulled_llvm_project_sha1_date}"
-      echo "  llvm_dockerfile_sha1   = ${pulled_llvm_dockerfile_sha1}"
+      echo "remote   ${image_name}:latest"
+      echo "  llvm_project_sha1      = ${remote_llvm_project_sha1}"
+      echo "  llvm_project_sha1 date = ${remote_llvm_project_sha1_date}"
+      echo "  llvm_dockerfile_sha1   = ${remote_llvm_dockerfile_sha1}"
       echo "expected ${image_name}:${image_tag}"
       echo "  llvm_project_sha1      = ${EXPECTED_LLVM_PROJECT_SHA1}"
       echo "  llvm_project_sha1 date = ${EXPECTED_LLVM_PROJECT_SHA1_DATE}"
@@ -175,15 +175,17 @@ function setup_private_llvm() {
 # Execution starts here #
 #########################
 
-# Static and shared llvm-project image name
-DOCKERHUB_USERNAME=${DOCKERHUB_USERNAME:-onnxmlirczar}
+DOCKERHUB_USER_NAME=$1
+GITHUB_JENKINS_DROID_TOKEN=$2
+ONNX_MLIR_PR_NUMBER=$3
 
-LLVM_STATIC_IMAGE=${DOCKERHUB_USERNAME}/onnx-mlir-llvm-static
-LLVM_SHARED_IMAGE=${DOCKERHUB_USERNAME}/onnx-mlir-llvm-shared
+# Static and shared llvm-project image name
+LLVM_STATIC_IMAGE=${DOCKERHUB_USER_NAME}/onnx-mlir-llvm-static
+LLVM_SHARED_IMAGE=${DOCKERHUB_USER_NAME}/onnx-mlir-llvm-shared
 
 # onnx-mlir dev and user image name
-ONNX_MLIR_DEV_IMAGE=${DOCKERHUB_USERNAME}/onnx-mlir-dev
-ONNX_MLIR_IMAGE=${DOCKERHUB_USERNAME}/onnx-mlir
+ONNX_MLIR_DEV_IMAGE=${DOCKERHUB_USER_NAME}/onnx-mlir-dev
+ONNX_MLIR_IMAGE=${DOCKERHUB_USER_NAME}/onnx-mlir
 
 # Expected llvm-project commit sha1 and date
 EXPECTED_LLVM_PROJECT_SHA1=$(cat utils/clone-mlir.sh | \
@@ -206,28 +208,28 @@ declare -A BUILD_SHARED_LIBS=([${LLVM_STATIC_IMAGE}]=OFF [${LLVM_SHARED_IMAGE}]=
 declare -A llvm_image_id
 
 # Setup per pull request private llvm-project image
-setup_private_llvm ${LLVM_STATIC_IMAGE} ${PULL_REQUEST_NUMBER}
-setup_private_llvm ${LLVM_SHARED_IMAGE} ${PULL_REQUEST_NUMBER}
+setup_private_llvm ${LLVM_STATIC_IMAGE} ${ONNX_MLIR_PR_NUMBER}
+setup_private_llvm ${LLVM_SHARED_IMAGE} ${ONNX_MLIR_PR_NUMBER}
 echo "Using llvm-project images:"
-echo "  ${LLVM_STATIC_IMAGE}:${PULL_REQUEST_NUMBER} ${llvm_image_id[${LLVM_STATIC_IMAGE}]}"
-echo "  ${LLVM_SHARED_IMAGE}:${PULL_REQUEST_NUMBER} ${llvm_image_id[${LLVM_SHARED_IMAGE}]}"
+echo "  ${LLVM_STATIC_IMAGE}:${ONNX_MLIR_PR_NUMBER} ${llvm_image_id[${LLVM_STATIC_IMAGE}]}"
+echo "  ${LLVM_SHARED_IMAGE}:${ONNX_MLIR_PR_NUMBER} ${llvm_image_id[${LLVM_SHARED_IMAGE}]}"
 
 # third_party/onnx commit hash
 THIRD_PARTY_ONNX_SHA1=$(git -C third_party/onnx rev-parse HEAD)
 
 # Use the static lib llvm-project image to build the onnx-mlir-dev image
-docker build -t ${ONNX_MLIR_DEV_IMAGE}:${PULL_REQUEST_NUMBER} \
-             --build-arg BASE_IMAGE=${LLVM_STATIC_IMAGE}:${PULL_REQUEST_NUMBER} \
-             --build-arg PULL_REQUEST_NUMBER=${PULL_REQUEST_NUMBER} \
+docker build -t ${ONNX_MLIR_DEV_IMAGE}:${ONNX_MLIR_PR_NUMBER} \
+             --build-arg BASE_IMAGE=${LLVM_STATIC_IMAGE}:${ONNX_MLIR_PR_NUMBER} \
+             --build-arg ONNX_MLIR_PR_NUMBER=${ONNX_MLIR_PR_NUMBER} \
              --build-arg THIRD_PARTY_ONNX_SHA1=${THIRD_PARTY_ONNX_SHA1} \
              -f docker/Dockerfile.onnx-mlir-dev .
 
 # Use the shared lib llvm-project image to build the onnx-mlir image
-docker build -t ${ONNX_MLIR_IMAGE}:${PULL_REQUEST_NUMBER} \
-             --build-arg BASE_IMAGE=${LLVM_SHARED_IMAGE}:${PULL_REQUEST_NUMBER} \
-             --build-arg PULL_REQUEST_NUMBER=${PULL_REQUEST_NUMBER} \
+docker build -t ${ONNX_MLIR_IMAGE}:${ONNX_MLIR_PR_NUMBER} \
+             --build-arg BASE_IMAGE=${LLVM_SHARED_IMAGE}:${ONNX_MLIR_PR_NUMBER} \
+             --build-arg ONNX_MLIR_PR_NUMBER=${ONNX_MLIR_PR_NUMBER} \
              --build-arg THIRD_PARTY_ONNX_SHA1=${THIRD_PARTY_ONNX_SHA1} \
              -f docker/Dockerfile.onnx-mlir .
 
 # Cleanup dangling images and containers if all images have been built successfully
-cleanup_dangling ${PULL_REQUEST_NUMBER}
+cleanup_dangling ${ONNX_MLIR_PR_NUMBER}

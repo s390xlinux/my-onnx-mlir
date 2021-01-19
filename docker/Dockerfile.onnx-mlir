@@ -2,8 +2,8 @@ ARG BASE_IMAGE
 FROM ${BASE_IMAGE} AS onnx-mlir-test
 
 # Label	the image with pull request number so we can find it for cleanup
-ARG PULL_REQUEST_NUMBER
-LABEL pull_request_number=${PULL_REQUEST_NUMBER}
+ARG ONNX_MLIR_PR_NUMBER
+LABEL onnx_mlir_pr_number=${ONNX_MLIR_PR_NUMBER}
 
 ARG WORK_DIR=/workdir
 WORKDIR ${WORK_DIR}
