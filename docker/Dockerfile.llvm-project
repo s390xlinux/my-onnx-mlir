@@ -2,14 +2,14 @@
 ARG BASE_IMAGE="ubuntu:focal"
 FROM ${BASE_IMAGE}
 
-# Label the image so we can find it for cleanup
+# Label the image for various checking and cleanup
 ARG LLVM_PROJECT_SHA1
 ARG LLVM_PROJECT_SHA1_DATE
-ARG LLVM_DOCKERFILE_SHA1
+ARG LLVM_PROJECT_DOCKERFILE_SHA1
 ARG ONNX_MLIR_PR_NUMBER
 LABEL llvm_project_sha1=${LLVM_PROJECT_SHA1}
 LABEL llvm_project_sha1_date=${LLVM_PROJECT_SHA1_DATE}
-LABEL llvm_dockerfile_sha1=${LLVM_DOCKERFILE_SHA1}
+LABEL llvm_project_dockerfile_sha1=${LLVM_PROJECT_DOCKERFILE_SHA1}
 LABEL onnx_mlir_pr_number=${ONNX_MLIR_PR_NUMBER}
 
 ARG WORK_DIR=/workdir
@@ -17,9 +17,9 @@ WORKDIR ${WORK_DIR}
 
 # Install tools needed
 RUN DEBIAN_FRONTEND=noninteractive TZ="America/New_York" \
-    apt-get update \
-    && apt-get install -y --no-install-recommends tzdata \
-    && apt-get install -y --no-install-recommends \
+    apt-get update -qq \
+    && apt-get install -qq -y --no-install-recommends tzdata \
+    && apt-get install -qq -y --no-install-recommends \
                autoconf automake ca-certificates cmake gcc g++ git \
 	       libncurses-dev libtool make ninja-build openjdk-11-jdk-headless \
                python3 python3-dev python3-distutils python3-numpy python3-pip \
