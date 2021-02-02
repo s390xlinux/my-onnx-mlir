@@ -26,7 +26,7 @@ ONNX_MLIR_LABELS     = [ 'onnx_mlir_sha1',
                          'onnx_mlir_dockerfile_sha1' ]
 
 cpu_arch             = os.getenv('CPU_ARCH')
-onnx_mlir_pr_number  = os.getenv('ONNX_MLIR_PR_NUMBER')
+onnx_mlir_pr_number  = os.getenv('ONNX_MLIR_PR_NUMBER2')
 dockerhub_user_name  = os.getenv('DOCKERHUB_USER_NAME')
 docker_daemon_socket = os.getenv('DOCKER_DAEMON_SOCKET')
 
@@ -99,7 +99,7 @@ def get_remote_image_labels(user_name, image_name, image_tag, image_labels):
 
         # v1Compatibility is a quoted JSON string, not a JSON object
         manifest = json.loads(resp.json()['history'][0]['v1Compatibility'])
-        logging.info('%s/%s:%s labels: %s', user_name, image_name, image_tag,
+        logging.info('remote %s/%s:%s labels: %s', user_name, image_name, image_tag,
                      manifest['config']['Labels'])
         labels = manifest['config']['Labels']
         if (labels):
@@ -195,7 +195,7 @@ def build_private_onnx_mlir(image_type, exp):
                 }):
             print(line['stream'] if 'stream' in line else '',
                   end='', flush=True)
-        
+
         id = docker_api.images(name = image_full, all = False, quiet = True)
         logging.info('image %s (%s) built', image_full, id[0][0:19])
 

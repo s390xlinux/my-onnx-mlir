@@ -58,6 +58,9 @@ def stop_previous_build(job_name, build_number, pr_number):
             # and the other two will be set to "none". We simply search for
             # pr_number in all the values in action['parameters'] and stop
             # the previous build if we find the value.
+            #
+            # Note that all merges will be using the 'master' pull request number
+            # so there can be only one merge at a time, across all pull requests.
 
             for action in build_info['actions']:
                 if ('_class' not in action or
@@ -87,10 +90,10 @@ def stop_previous_build(job_name, build_number, pr_number):
             if stopping:
                 break
 
-        # If we stopped a previous build, wait 5 second before
+        # If we stopped a previous build, wait 15 seconds before
         # looping back to see if it's gone. Otherwise we are done.
         if stopping:
-            time.sleep(5)
+            time.sleep(15)
         else:
             break
 
@@ -102,7 +105,7 @@ def stop_previous_build(job_name, build_number, pr_number):
 
     logging.info('Runninng job %s build #%s for pull request #%s',
                  job_name, build_number, pr_number)
-        
+
 def main():
     stop_previous_build(jenkins_job_name, jenkins_build_number, onnx_mlir_pr_number)
 

@@ -17,8 +17,9 @@ jenkins_home         = os.getenv('JENKINS_HOME')
 jenkins_job_name     = os.getenv('JOB_NAME')
 jenkins_build_result = os.getenv('JENKINS_BUILD_RESULT')
 
-onnx_mlir_pr_number  = os.getenv('ONNX_MLIR_PR_NUMBER')
+onnx_mlir_pr_number  = os.getenv('ONNX_MLIR_PR_NUMBER2')
 onnx_mlir_pr_action  = os.getenv('ONNX_MLIR_PR_ACTION')
+onnx_mlir_pr_merged  = os.getenv('ONNX_MLIR_PR_MERGED')
 
 docker_api           = docker.APIClient(base_url=docker_daemon_socket)
 
@@ -55,18 +56,27 @@ def cleanup_docker_images(pr_number, dangling):
             logging.info(sys.exc_info()[1])
 
 def main():
+    # Don't cleanup in case of failure for debugging purpose.
     if jenkins_build_result == 'FAILURE':
         return
 
-    # Don't cleanup in case of failure for debugging purpose
-    dangling = True if (jenkins_build_result == 'UNKNOWN' or
-                        onnx_mlir_pr_action != 'closed') else False
+    # Only cleanup dangling if we are starting up (build result UNKNOWN)
+    #
+    # Only cleanup dangling if the pull request is closed by merging
+    # since a push event will be coming so we want the build for the
+    # push event to be able to reuse cached docker image layers. The
+    # push event will do full cleanup after publish.
+
+    dangling = False if (jenkins_build_result != 'UNKNOWN' and
+                         onnx_mlir_pr_action == 'closed' and
+                         onnx_mlir_pr_merged == 'false') else True
 
     logging.info('Docker cleanup for pull request: #%s, ' +
-                 'build result: %s, action: %s, dangling: %s',
+                 'build result: %s, action: %s, merged: %s, dangling: %s',
                  onnx_mlir_pr_number,
                  jenkins_build_result,
                  onnx_mlir_pr_action,
+                 onnx_mlir_pr_merged,
                  dangling)
 
     cleanup_docker_images(onnx_mlir_pr_number, dangling)

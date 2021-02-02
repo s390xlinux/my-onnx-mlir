@@ -69,7 +69,7 @@ pr_mergeable_state         = {
 def get_local_image_labels(user_name, image_name, image_tag, image_labels):
     info = docker_api.inspect_image(
         user_name + '/' + image_name + ':' + image_tag)
-    logging.info('%s/%s:%s labels: %s', user_name, image_name, image_tag,
+    logging.info('local %s/%s:%s labels: %s', user_name, image_name, image_tag,
                  info['Config']['Labels'])
     labels = info['Config']['Labels']
     if (labels):
@@ -83,7 +83,7 @@ def get_local_image_labels(user_name, image_name, image_tag, image_labels):
     raise Exception('local image {}/{}:{} does not exist ' +
                     'or has invalid labels'.format(
                         user_name, image_name, image_tag))
-        
+
 # Get the labels of a docker image in the docker registry.
 # python docker SDK does not support this so we have to make
 # our own REST calls.
@@ -106,7 +106,7 @@ def get_remote_image_labels(user_name, image_name, image_tag, image_labels):
 
         # v1Compatibility is a quoted JSON string, not a JSON object
         manifest = json.loads(resp.json()['history'][0]['v1Compatibility'])
-        logging.info('%s/%s:%s labels: %s', user_name, image_name, image_tag,
+        logging.info('remote %s/%s:%s labels: %s', user_name, image_name, image_tag,
                      manifest['config']['Labels'])
         labels = manifest['config']['Labels']
         if (labels):
@@ -172,12 +172,15 @@ def image_publishable(image_type, trigger_phrase):
     remote_labels = get_remote_image_labels(
         user_name, image_name, cpu_arch, image_labels)
 
-    state = get_pr_mergeable_state(onnx_mlir_pr_request_url)
-    logging.info('mergeable state %s, %s',
-                 state, pr_mergeable_state[state]['desc'])
-    if not pr_mergeable_state[state]['mergeable']:
-        logging.info('publish skipped due to unmergeable state')
-        return False
+    # If url is 'none', it's a push event from merging so skip
+    # mergeable state check.
+    if onnx_mlir_pr_request_url != 'none':
+        state = get_pr_mergeable_state(onnx_mlir_pr_request_url)
+        logging.info('mergeable state %s, %s',
+                     state, pr_mergeable_state[state]['desc'])
+        if not pr_mergeable_state[state]['mergeable']:
+            logging.info('publish skipped due to unmergeable state')
+            return False
     if not remote_labels:
         logging.info('publish due to invalid remote labels')
         return True
@@ -218,14 +221,14 @@ def publish_image(image_type, trigger_phrase):
     image_repo  = user_name + '/' + image_name
 
     # Tag the image with arch
-    logging.info('Tagging %s:%s -> %s:%s',
+    logging.info('tagging %s:%s -> %s:%s',
                  image_repo, image_tag, image_repo, cpu_arch)
     docker_api.tag(image_repo + ':' + image_tag,
                    image_repo, cpu_arch, force = True)
 
     # Push the image tagged with arch then remove it, regardless of
     # whether the push worked or not.
-    logging.info('Pushing %s:%s', image_repo, cpu_arch)
+    logging.info('pushing %s:%s', image_repo, cpu_arch)
     try:
         for line in docker_api.push(repository = image_repo,
                                     tag = cpu_arch,
