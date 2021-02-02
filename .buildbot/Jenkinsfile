@@ -88,25 +88,18 @@ def call() {
        * request source code in order to get access to the rest of the build
        * scripts.
        *
-       * Note that the push event from merging a PR is just a push on master
-       * branch and is not tied to the specific PR. Only the commit message
-       * indicates which PR is merged. So the commit message is used as the
-       * title. The push event also does not have its own statuses url since
-       * the PR is merged and closed. So the PR's statuses url will be used.
-       *
-       * Also note the escaped $ sign. It's first interpreted by Jenkins.
-       * So if we want bash specific interpretation such as $(git ...),
-       * we need to escape the $ sign.
+       * Note that with action close we still need to checkout the source
+       * code in order to get jenkins-cleanup-docker.py. So we only do a
+       * checkout without third party submodules. Just like what we did for
+       * Jenkinsfile script checkout.
        */
       stage('Checkout PR source') {
-        when { not { environment name: 'ONNX_MLIR_PR_ACTION',
-                     value: 'closed' } }
         steps {
           checkout_pr_source("${ONNX_MLIR_PR_REPO_URL}",
                              "${ONNX_MLIR_PR_REMOTE}",
                              "${ONNX_MLIR_PR_REFSPEC}",
                              "${ONNX_MLIR_PR_BRANCH}",
-                             true)
+                             "${ONNX_MLIR_PR_ACTION}" != 'closed')
         }
       }
 
@@ -142,6 +135,13 @@ def call() {
 
           post_commit_status("${x_github_event}", 'pending')
           set_build_name("${x_github_event}")
+          /* For push event (pull request merged), ONNX_MLIR_PR_NUMBER
+           * will be 'master', which is used by jenkins-stop-previous-build.py.
+           * This allows us to have only one merge build running across all
+           * pull requests. For all the other stages, we still use the
+           * numerical pull request number associated with the merge stored
+           * in ONNX_MLIR_PR_NUMBER2.
+           */
           call_build_script("${JENKINS_STOP_PREVIOUS_BUILD}")
           call_build_script("${JENKINS_CLEANUP_DOCKER}")
         }
@@ -193,17 +193,12 @@ def call() {
               call_build_script("${JENKINS_CLEANUP_DOCKER}")
 
               deleteDir()
-              println "Removing ${JENKINS_WORKSPACE_AT}"
-
               dir("${JENKINS_WORKSPACE_AT}@tmp") {
                 deleteDir()
               }
-              println "Removing ${JENKINS_WORKSPACE_AT}@tmp"
-
               dir("${JENKINS_SCRIPTSPACE_AT}") {
                 deleteDir()
               }
-              println "Removing ${JENKINS_SCRIPTSPACE_AT}"
           } catch (e) {
             echo e.getMessage()
           }

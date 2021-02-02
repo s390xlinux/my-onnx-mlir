@@ -16,8 +16,9 @@ docker_daemon_socket       = os.getenv('DOCKER_DAEMON_SOCKET')
 dockerhub_user_name        = os.getenv('DOCKERHUB_USER_NAME')
 dockerhub_user_token       = os.getenv('DOCKERHUB_USER_TOKEN')
 github_jenkins_droid_token = os.getenv('GITHUB_JENKINS_DROID_TOKEN')
+
+onnx_mlir_pr_number        = os.getenv('ONNX_MLIR_PR_NUMBER2')
 onnx_mlir_pr_phrase        = os.getenv('ONNX_MLIR_PR_PHRASE')
-onnx_mlir_pr_number        = os.getenv('ONNX_MLIR_PR_NUMBER')
 onnx_mlir_pr_request_url   = os.getenv('ONNX_MLIR_PR_REQUEST_URL')
 
 docker_api                 = docker.APIClient(base_url=docker_daemon_socket)
