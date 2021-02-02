@@ -33,7 +33,7 @@ IMAGE_NAME                 = { 'static': 'onnx-mlir-llvm-static',
                                'shared': 'onnx-mlir-llvm-shared',
                                'dev': 'onnx-mlir-dev',
                                'usr': 'onnx-mlir' }
-IMAGE_TAG                  = { 'push': 'master',
+IMAGE_TAG                  = { 'push': onnx_mlir_pr_number,
                                'publish': onnx_mlir_pr_number }
 IMAGE_LABELS               = { 'onnx-mlir-llvm-static': LLVM_PROJECT_LABELS,
                                'onnx-mlir-llvm-shared': LLVM_PROJECT_LABELS,
@@ -246,10 +246,8 @@ def publish_image(image_type, trigger_phrase):
         docker_api.remove_image(image_repo + ':' + cpu_arch, force = True)
 
 def main():
-    publish_image('static', onnx_mlir_pr_phrase)
-    publish_image('shared', onnx_mlir_pr_phrase)
-    publish_image('dev', onnx_mlir_pr_phrase)
-    publish_image('usr', onnx_mlir_pr_phrase)
+    for image_type in [ 'static', 'shared', 'dev', 'usr' ]:
+        publish_image(image_type, onnx_mlir_pr_phrase)
 
 if __name__ == "__main__":
     main()
