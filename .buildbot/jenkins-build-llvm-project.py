@@ -30,7 +30,7 @@ LLVM_PROJECT_LABELS        = [ 'llvm_project_sha1',
 
 cpu_arch                   = os.getenv('CPU_ARCH')
 github_jenkins_droid_token = os.getenv('GITHUB_JENKINS_DROID_TOKEN')
-onnx_mlir_pr_number        = os.getenv('ONNX_MLIR_PR_NUMBER')
+onnx_mlir_pr_number        = os.getenv('ONNX_MLIR_PR_NUMBER2')
 dockerhub_user_name        = os.getenv('DOCKERHUB_USER_NAME')
 docker_daemon_socket       = os.getenv('DOCKER_DAEMON_SOCKET')
 
@@ -43,7 +43,7 @@ def valid_sha1_date(sha1_date):
         return True
     except:
         return False
-    
+
 # Extract a regex pattern from a file. Used to get llvm-project sha1
 # from utils/clone-mlir.sh.
 def extract_pattern_from_file(file_name, regex_pattern):
@@ -103,7 +103,7 @@ def get_remote_image_labels(user_name, image_name, image_tag, image_labels):
 
         # v1Compatibility is a quoted JSON string, not a JSON object
         manifest = json.loads(resp.json()['history'][0]['v1Compatibility'])
-        logging.info('%s/%s:%s labels: %s', user_name, image_name, image_tag,
+        logging.info('remote %s/%s:%s labels: %s', user_name, image_name, image_tag,
                      manifest['config']['Labels'])
         labels = manifest['config']['Labels']
         if (labels):
@@ -165,7 +165,7 @@ def setup_private_llvm(image_type, exp):
     # used to build the llvm-project image.
     id = docker_api.images(name = image_full, filters = image_filter,
                            all = False, quiet = True)
-                            
+
     # If a local useable llvm-project image was not found, see if we can
     # pull one from the registry.
     if not id:
@@ -233,7 +233,7 @@ def setup_private_llvm(image_type, exp):
             id = docker_api.images(name = image_full,
                                    all = False, quiet = True)
             logging.info('image %s (%s) built', image_full, id[0][0:19])
-        
+
         # Registry image has an llvm-project commit sha1 date later than what
         # we expect, the build source is out of date. Exit to fail the build,
         # regardless of Dockerfile.llvm-project sha1 being expected or not.

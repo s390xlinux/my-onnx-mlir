@@ -52,7 +52,7 @@ RUN cd llvm-project && mkdir build && cd build \
              -DCMAKE_BUILD_TYPE=Release \
              -DLLVM_ENABLE_ASSERTIONS=ON \
              -DLLVM_ENABLE_RTTI=ON \
-	     -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} \
+             -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} \
     && cmake --build . --target -- ${MAKEFLAGS} \
     && (cmake --build . --target check-mlir || [ "$(uname -m)" = "s390x" ]) \
     && rm -rf /tmp/* \
