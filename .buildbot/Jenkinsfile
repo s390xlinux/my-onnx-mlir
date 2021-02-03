@@ -34,21 +34,10 @@ def call() {
       JENKINS_WORKSPACE = "${JENKINS_HOME}/workspace/${JOB_NAME}@pr_${ONNX_MLIR_PR_NUMBER}"
       /* We may get one with @2, @3, etc. appended */
       JENKINS_WORKSPACE_AT = "${WORKSPACE}"
-/*
-      ONNX_MLIR_PR_STATUS_URL = sh(returnStdout: true,
-                                   script: """#!/bin/bash -x
-        url=${github_webhook_payload_repository_statuses_url}
-        sha=\$(git -C ${JENKINS_WORKSPACE_AT} rev-parse HEAD)
-        declare -A sha1=([pull_request]="\${sha}"
-                         [issue_comment]="\${sha}"
-                         [push]="${github_webhook_payload_commits_0_id}")
-        echo \${url%\\{sha\\}}\${sha1[${x_github_event}]}""").trim()
 
-      ONNX_MLIR_PR_COMMIT_MESSAGE = sh(returnStdout: true,
-                                       script: """#!/bin/bash -x
-        git -C ${JENKINS_WORKSPACE_AT} log \
-            --oneline --format=%B -n 1 HEAD""").trim()
-*/
+      DOCKER_DAEMON_SOCKET = 'unix://var/run/docker.sock'
+      DOCKERHUB_USER_NAME = 's390xlinux'
+
       /* Environment variables that depend on the arch */
       JENKINS_REST_API_URL = sh(returnStdout: true,
                                 script: """#!/bin/bash +x
@@ -61,9 +50,6 @@ def call() {
         declare -A user=([s390x]="jenkins"
                          [amd64]="jenkins")
         echo \${user[${CPU_ARCH}]}""").trim()
-
-      DOCKER_DAEMON_SOCKET = 'unix://var/run/docker.sock'
-      DOCKERHUB_USER_NAME = 's390xlinux'
 
       /* External stage build scripts */
       JENKINS_SCRIPT_DIR="${JENKINS_WORKSPACE_AT}/.buildbot"
@@ -196,9 +182,6 @@ def call() {
               dir("${JENKINS_WORKSPACE_AT}@tmp") {
                 deleteDir()
               }
-              dir("${JENKINS_SCRIPTSPACE_AT}") {
-                deleteDir()
-              }
           } catch (e) {
             echo e.getMessage()
           }
@@ -230,7 +213,8 @@ def set_build_name(event) {
 /* Set commit status appearing on the GitHub pull request page */
 def post_commit_status(event, state) {
     def status   = (state == 'aborted') ? 'failure' : state
-    def title    = "${ONNX_MLIR_PR_COMMIT_MESSAGE}"
+    /* Commit message may have newline so replace it to avoid invalid JSON */
+    def title    = "${ONNX_MLIR_PR_COMMIT_MESSAGE}".replace('\n', ' ')
     def pr       = (event == 'pull_request') ? 'PR ' : 'pr '
     def phrase   = (event == 'issue_comment') ?
                    "${ONNX_MLIR_PR_PHRASE}" : "${ONNX_MLIR_PR_ACTION}"
