@@ -68,8 +68,9 @@ def main():
     # push event will do full cleanup after publish.
 
     dangling = False if (jenkins_build_result != 'UNKNOWN' and
-                         onnx_mlir_pr_action == 'closed' and
-                         onnx_mlir_pr_merged == 'false') else True
+                         ((onnx_mlir_pr_action == 'closed' and
+                           onnx_mlir_pr_merged == 'false') or
+                          onnx_mlir_pr_action == 'push')) else True
 
     logging.info('Docker cleanup for pull request: #%s, ' +
                  'build result: %s, action: %s, merged: %s, dangling: %s',
