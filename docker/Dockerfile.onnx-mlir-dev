@@ -34,6 +34,10 @@ RUN LLVM_PROJECT_ROOT=${WORK_DIR}/llvm-project \
     && cd ${ONNX_MLIR_ROOT} \
     && rm -rf /tmp/* ${ONNX_MLIR_ROOT}/build
 
+# Label the base image so it can be cleaned up after becoming dangling
+ARG ONNX_MLIR_PR_NUMBER
+LABEL onnx_mlir_pr_number=${ONNX_MLIR_PR_NUMBER}
+
 # Copy from onnx-mlir-dev-test to squash removed source layer and
 # remove dependency on onnx-mlir-llvm-shared image
 FROM scratch

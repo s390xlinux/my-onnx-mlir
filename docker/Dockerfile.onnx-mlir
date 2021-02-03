@@ -44,6 +44,10 @@ RUN LLVM_PROJECT_ROOT=${WORK_DIR}/llvm-project \
     && rm -rf /tmp/* /var/lib/apt/lists/* \
               /usr/bin/python llvm-project onnx-mlir
 
+# Label	the base image so it can be cleaned up after becoming dangling
+ARG ONNX_MLIR_PR_NUMBER
+LABEL onnx_mlir_pr_number=${ONNX_MLIR_PR_NUMBER}
+
 # Copy from onnx-mlir-test to squash removed source layer and
 # remove dependency on onnx-mlir-llvm-shared image
 FROM scratch
