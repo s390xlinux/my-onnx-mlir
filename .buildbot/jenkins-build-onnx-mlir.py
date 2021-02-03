@@ -26,9 +26,9 @@ ONNX_MLIR_LABELS     = [ 'onnx_mlir_sha1',
                          'onnx_mlir_dockerfile_sha1' ]
 
 cpu_arch             = os.getenv('CPU_ARCH')
-onnx_mlir_pr_number  = os.getenv('ONNX_MLIR_PR_NUMBER2')
 dockerhub_user_name  = os.getenv('DOCKERHUB_USER_NAME')
 docker_daemon_socket = os.getenv('DOCKER_DAEMON_SOCKET')
+onnx_mlir_pr_number  = os.getenv('ONNX_MLIR_PR_NUMBER2')
 
 docker_api           = docker.APIClient(base_url=docker_daemon_socket)
 
@@ -67,7 +67,7 @@ def get_onnx_mlir_info(image_type, local_repo):
         'onnx_mlir_sha1=' + exp_onnx_mlir_sha1,
         'onnx_mlir_dockerfile_sha1=' + exp_onnx_mlir_dockerfile_sha1 ] }
 
-    logging.info('onnx-mlir expected')
+    logging.info('%s expected', ONNX_MLIR_IMAGE[image_type])
     logging.info('commit sha1:     %s', exp_onnx_mlir_sha1)
     logging.info('commit date:     %s', exp_onnx_mlir_sha1_date)
     logging.info('dockerfile sha1: %s', exp_onnx_mlir_dockerfile_sha1)

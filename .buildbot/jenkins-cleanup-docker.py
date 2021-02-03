@@ -34,11 +34,13 @@ def cleanup_docker_images(pr_number, dangling):
 
     # The llvm-project images is built by a previous pull request until we
     # bump its commit sha1. So the filter will not catch them. For final
-    # cleanup, they are cleaned by using the image tag.
+    # cleanup, they are cleaned by untagging the image. Untagging is done
+    # by simply passing the full image name instead of the image sha256 to
+    # remove_image.
     if not dangling:
         for image_name in LLVM_PROJECT_IMAGES:
             image_full = dockerhub_user_name + '/' + image_name + ':' + pr_number
-            images.extend(docker_api.images(name=image_full, quiet=True))
+            images.extend(image_full)
 
     # When a build is aborted the cleanup may try to remove an intermediate
     # image or container that the docker build process itself is already doing,
