@@ -234,13 +234,13 @@ def post_commit_status(event, state) {
           "description": "${desc} ${action} ${duration}" }
     """
 
-    sh '''#!/bin/bash -x
+    sh '''#!/bin/bash +x
     curl -s ${ONNX_MLIR_PR_STATUS_URL} \
          -X POST \
          -H "Accept: application/vnd.github.v3+json" \
          -H "Authorization: token ${GITHUB_COMMIT_STATUS_TOKEN}" \
-         -d \' ''' + data + ''' \' #| \
-    #jq '{url: .url, state: .state, description: .description, context: .context}'
+         -d \' ''' + data + ''' \' | \
+    jq '{url: .url, state: .state, description: .description, context: .context, message: .message}'
     '''
 }
 
