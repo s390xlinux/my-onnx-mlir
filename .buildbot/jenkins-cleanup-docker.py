@@ -9,12 +9,11 @@ import sys
 logging.basicConfig(
     level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
 
-docker_daemon_socket = os.getenv('DOCKER_DAEMON_SOCKET')
+LLVM_PROJECT_IMAGES  = [ 'onnx-mlir-llvm-static',
+                         'onnx-mlir-llvm-shared' ]
 
-jenkins_scriptspace  = os.getenv('JENKINS_SCRIPTSPACE')
-jenkins_workspace    = os.getenv('JENKINS_WORKSPACE')
-jenkins_home         = os.getenv('JENKINS_HOME')
-jenkins_job_name     = os.getenv('JOB_NAME')
+docker_daemon_socket = os.getenv('DOCKER_DAEMON_SOCKET')
+dockerhub_user_name  = os.getenv('DOCKERHUB_USER_NAME')
 jenkins_build_result = os.getenv('JENKINS_BUILD_RESULT')
 
 onnx_mlir_pr_number  = os.getenv('ONNX_MLIR_PR_NUMBER2')
@@ -32,6 +31,14 @@ def cleanup_docker_images(pr_number, dangling):
     if dangling:
         filters['dangling'] = True
     images = docker_api.images(filters = filters, quiet = True)
+
+    # The llvm-project images is built by a previous pull request until we
+    # bump its commit sha1. So the filter will not catch them. For final
+    # cleanup, they are cleaned by using the image tag.
+    if not dangling:
+        for image_name in LLVM_PROJECT_IMAGES:
+            image_full = dockerhub_user_name + '/' + image_name + ':' + pr_number
+            images.extend(docker_api.images(name=image_full, quiet=True))
 
     # When a build is aborted the cleanup may try to remove an intermediate
     # image or container that the docker build process itself is already doing,
