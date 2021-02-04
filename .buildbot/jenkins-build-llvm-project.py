@@ -30,7 +30,7 @@ LLVM_PROJECT_LABELS        = [ 'llvm_project_sha1',
 
 cpu_arch                   = os.getenv('CPU_ARCH')
 github_jenkins_droid_token = os.getenv('GITHUB_JENKINS_DROID_TOKEN')
-onnx_mlir_pr_number        = os.getenv('ONNX_MLIR_PR_NUMBER2')
+onnx_mlir_pr_number        = os.getenv('ONNX_MLIR_PR_NUMBER')
 dockerhub_user_name        = os.getenv('DOCKERHUB_USER_NAME')
 docker_daemon_socket       = os.getenv('DOCKER_DAEMON_SOCKET')
 

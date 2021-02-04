@@ -121,13 +121,6 @@ def call() {
 
           post_commit_status("${x_github_event}", 'pending')
           set_build_name("${x_github_event}")
-          /* For push event (pull request merged), ONNX_MLIR_PR_NUMBER
-           * will be 'master', which is used by jenkins-stop-previous-build.py.
-           * This allows us to have only one merge build running across all
-           * pull requests. For all the other stages, we still use the
-           * numerical pull request number associated with the merge stored
-           * in ONNX_MLIR_PR_NUMBER2.
-           */
           call_build_script("${JENKINS_STOP_PREVIOUS_BUILD}")
           call_build_script("${JENKINS_CLEANUP_DOCKER}")
         }
