@@ -40,7 +40,7 @@ def cleanup_docker_images(pr_number, dangling):
     if not dangling:
         for image_name in LLVM_PROJECT_IMAGES:
             image_full = dockerhub_user_name + '/' + image_name + ':' + pr_number
-            images.extend(image_full)
+            images.append(image_full)
 
     # When a build is aborted the cleanup may try to remove an intermediate
     # image or container that the docker build process itself is already doing,
@@ -75,10 +75,18 @@ def main():
     # since a push event will be coming so we want the build for the
     # push event to be able to reuse cached docker image layers. The
     # push event will do full cleanup after publish.
+    #
+    # On further testing, it appears that when one pull request is based
+    # on another pull request, merging the first pull request can result
+    # in the second pull request being merged automatically. And for the
+    # second pull request, only a pull_request event with close action
+    # and mergeable state setting to true will be sent, no push event.
+    # So for a pull request event with close action, regardless of the
+    # mergeable state, we will do full cleanup. Push event will also do
+    # full cleanup.
 
     dangling = False if (jenkins_build_result != 'UNKNOWN' and
-                         ((onnx_mlir_pr_action == 'closed' and
-                           onnx_mlir_pr_merged == 'false') or
+                         (onnx_mlir_pr_action == 'closed' or
                           onnx_mlir_pr_action == 'push')) else True
 
     logging.info('Docker cleanup for pull request: #%s, ' +
