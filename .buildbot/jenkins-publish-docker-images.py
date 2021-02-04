@@ -17,7 +17,7 @@ dockerhub_user_name        = os.getenv('DOCKERHUB_USER_NAME')
 dockerhub_user_token       = os.getenv('DOCKERHUB_USER_TOKEN')
 github_jenkins_droid_token = os.getenv('GITHUB_JENKINS_DROID_TOKEN')
 
-onnx_mlir_pr_number        = os.getenv('ONNX_MLIR_PR_NUMBER2')
+onnx_mlir_pr_number        = os.getenv('ONNX_MLIR_PR_NUMBER')
 onnx_mlir_pr_phrase        = os.getenv('ONNX_MLIR_PR_PHRASE')
 onnx_mlir_pr_request_url   = os.getenv('ONNX_MLIR_PR_REQUEST_URL')
 
@@ -33,7 +33,7 @@ IMAGE_NAME                 = { 'static': 'onnx-mlir-llvm-static',
                                'shared': 'onnx-mlir-llvm-shared',
                                'dev': 'onnx-mlir-dev',
                                'usr': 'onnx-mlir' }
-IMAGE_TAG                  = { 'push': onnx_mlir_pr_number,
+IMAGE_TAG                  = { 'push': 'master',
                                'publish': onnx_mlir_pr_number }
 IMAGE_LABELS               = { 'onnx-mlir-llvm-static': LLVM_PROJECT_LABELS,
                                'onnx-mlir-llvm-shared': LLVM_PROJECT_LABELS,

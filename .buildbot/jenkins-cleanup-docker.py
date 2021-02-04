@@ -16,7 +16,7 @@ docker_daemon_socket = os.getenv('DOCKER_DAEMON_SOCKET')
 dockerhub_user_name  = os.getenv('DOCKERHUB_USER_NAME')
 jenkins_build_result = os.getenv('JENKINS_BUILD_RESULT')
 
-onnx_mlir_pr_number  = os.getenv('ONNX_MLIR_PR_NUMBER2')
+onnx_mlir_pr_number  = os.getenv('ONNX_MLIR_PR_NUMBER')
 onnx_mlir_pr_action  = os.getenv('ONNX_MLIR_PR_ACTION')
 onnx_mlir_pr_merged  = os.getenv('ONNX_MLIR_PR_MERGED')
 
