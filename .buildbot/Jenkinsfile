@@ -225,7 +225,7 @@ def post_commit_status(event, state) {
     def data = """
         { "state": "${status}", \
           "context": "Jenkins Linux ${CPU_ARCH}", \
-          "description": "${desc} ${action} ${duration}" \
+          "description": "${desc} ${action} ${duration}", \
           "target_url": "${BUILD_URL}" }
     """
 
