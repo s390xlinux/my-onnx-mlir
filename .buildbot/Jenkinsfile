@@ -1,6 +1,6 @@
 /* This is a special function that gets called by loading the file into
- * an object variable and then simply call the object variable like the
- * following:
+ * an object variable and then simply call the object variable as a
+ * function, like the following:
  *
  *   jenkinsfile = load ".../Jenkinsfile"
  *   jenkinsfile()
@@ -13,7 +13,10 @@
  *
  * However, the pipeline wrapped inside "run_pipeline" must be a scripted
  * pipeline while the pipeline wrapped inside "call" can be a declarative
- * pipeline.
+ * pipeline. There are pros and cons between scripted and declarative
+ * pipeline. In our case, a declarative pipeline is somewhat simpler since
+ * with the environment {...} block it's simpler to pass global environment
+ * variables to to all the stages.
  */
 def call() {
   pipeline {
@@ -57,13 +60,13 @@ def call() {
       JENKINS_BUILD_LLVM_PROJECT="${JENKINS_SCRIPT_DIR}/jenkins-build-llvm-project.py"
       JENKINS_BUILD_ONNX_MLIR="${JENKINS_SCRIPT_DIR}/jenkins-build-onnx-mlir.py"
       JENKINS_PUBLISH_DOCKER_IMAGES="${JENKINS_SCRIPT_DIR}/jenkins-publish-docker-images.py"
-      JENKINS_CLEANUP_DOCKER="${JENKINS_SCRIPT_DIR}/jenkins-cleanup-docker.py"
+      JENKINS_CLEANUP_BUILD_STATES="${JENKINS_SCRIPT_DIR}/jenkins-cleanup-build-states.py"
 
       /* Credentials defined in Jenkins */
       JENKINS_REST_API_TOKEN = credentials('Jenkins-REST-API-Token')
       GITHUB_JENKINS_DROID_TOKEN = credentials('jenkins-buildbot-access-token')
       GITHUB_COMMIT_STATUS_TOKEN = credentials('Github-Commit-Status-Token')
-      DOCKERHUB_USER_TOKEN = credentials('jenkins-s390x-to-dockerhub-s390xlinux')
+      DOCKERHUB_USER_TOKEN = credentials('jenkins-to-dockerhub-s390xlinux')
     }
 
     stages {
@@ -91,6 +94,7 @@ def call() {
 
       stage('Pre build preparation') {
         steps {
+	  /* Set build result to UNKNOWN so we know we are starting up */
           script {
             env.JENKINS_BUILD_RESULT = 'UNKNOWN'
           }
@@ -170,7 +174,7 @@ def call() {
           env.JENKINS_BUILD_RESULT = "${currentBuild.currentResult}"
 
           try {
-              call_build_script("${JENKINS_CLEANUP_DOCKER}")
+              call_build_script("${JENKINS_CLEANUP_BUILD_STATES}")
 
               deleteDir()
               dir("${JENKINS_WORKSPACE_AT}@tmp") {
