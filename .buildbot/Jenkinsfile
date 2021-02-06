@@ -67,6 +67,13 @@ def call() {
       GITHUB_JENKINS_DROID_TOKEN = credentials('jenkins-buildbot-access-token')
       GITHUB_COMMIT_STATUS_TOKEN = credentials('Github-Commit-Status-Token')
       DOCKERHUB_USER_TOKEN = credentials('jenkins-to-dockerhub-s390xlinux')
+
+      /* Depending on the system, python3 default I/O encoding could be set to
+       * something other than utf-8, e.g., ISO-8859-1. This will cause trouble
+       * when we try to print the output from docker build, which is encoded in
+       * utf-8. So we set the default I/O encoding to utf-8.
+       */
+      PYTHONIOENCODING = 'utf-8'
     }
 
     stages {
