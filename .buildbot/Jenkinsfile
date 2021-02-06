@@ -1,6 +1,6 @@
 /* This is a special function that gets called by loading the file into
- * an object variable and then simply call the object variable like the
- * following:
+ * an object variable and then simply call the object variable as a
+ * function, like the following:
  *
  *   jenkinsfile = load ".../Jenkinsfile"
  *   jenkinsfile()
@@ -13,7 +13,10 @@
  *
  * However, the pipeline wrapped inside "run_pipeline" must be a scripted
  * pipeline while the pipeline wrapped inside "call" can be a declarative
- * pipeline.
+ * pipeline. There are pros and cons between scripted and declarative
+ * pipeline. In our case, a declarative pipeline is somewhat simpler since
+ * with the environment {...} block it's simpler to pass global environment
+ * variables to to all the stages.
  */
 def call() {
   pipeline {
@@ -57,13 +60,20 @@ def call() {
       JENKINS_BUILD_LLVM_PROJECT="${JENKINS_SCRIPT_DIR}/jenkins-build-llvm-project.py"
       JENKINS_BUILD_ONNX_MLIR="${JENKINS_SCRIPT_DIR}/jenkins-build-onnx-mlir.py"
       JENKINS_PUBLISH_DOCKER_IMAGES="${JENKINS_SCRIPT_DIR}/jenkins-publish-docker-images.py"
-      JENKINS_CLEANUP_DOCKER="${JENKINS_SCRIPT_DIR}/jenkins-cleanup-docker.py"
+      JENKINS_CLEANUP_BUILD_STATES="${JENKINS_SCRIPT_DIR}/jenkins-cleanup-build-states.py"
 
       /* Credentials defined in Jenkins */
       JENKINS_REST_API_TOKEN = credentials('Jenkins-REST-API-Token')
       GITHUB_JENKINS_DROID_TOKEN = credentials('jenkins-buildbot-access-token')
       GITHUB_COMMIT_STATUS_TOKEN = credentials('Github-Commit-Status-Token')
-      DOCKERHUB_USER_TOKEN = credentials('jenkins-s390x-to-dockerhub-s390xlinux')
+      DOCKERHUB_USER_TOKEN = credentials('jenkins-to-dockerhub-s390xlinux')
+
+      /* Depending on the system, python3 default I/O encoding could be set to
+       * something other than utf-8, e.g., ISO-8859-1. This will cause trouble
+       * when we try to print the output from docker build, which is encoded in
+       * utf-8. So we set the default I/O encoding to utf-8.
+       */
+      PYTHONIOENCODING = 'utf-8'
     }
 
     stages {
@@ -81,24 +91,10 @@ def call() {
        */
       stage('Checkout PR source') {
         steps {
-          checkout_pr_source("${ONNX_MLIR_PR_REPO_URL}",
-                             "${ONNX_MLIR_PR_REMOTE}",
-                             "${ONNX_MLIR_PR_REFSPEC}",
-                             "${ONNX_MLIR_PR_BRANCH}",
-                             "${ONNX_MLIR_PR_ACTION}" != 'closed')
-        }
-      }
-
-      stage('Pre build preparation') {
-        steps {
-          script {
-            env.JENKINS_BUILD_RESULT = 'UNKNOWN'
-          }
-
           /* uncomment for debugging */
           /*sh 'printenv'*/
           echo "CPU_ARCH                    = ${CPU_ARCH}"
-          echo "JENKINS_BUILD_RESULT        = ${JENKINS_BUILD_RESULT}"
+          echo "BUILD_URL                   = ${BUILD_URL}"
           echo "JENKINS_SCRIPTSPACE         = ${JENKINS_SCRIPTSPACE}"
           echo "JENKINS_SCRIPTSPACE_AT      = ${JENKINS_SCRIPTSPACE_AT}"
           echo "JENKINS_WORKSPACE           = ${JENKINS_WORKSPACE}"
@@ -121,8 +117,24 @@ def call() {
 
           post_commit_status("${x_github_event}", 'pending')
           set_build_name("${x_github_event}")
+
+          checkout_pr_source("${ONNX_MLIR_PR_REPO_URL}",
+                             "${ONNX_MLIR_PR_REMOTE}",
+                             "${ONNX_MLIR_PR_REFSPEC}",
+                             "${ONNX_MLIR_PR_BRANCH}",
+                             "${ONNX_MLIR_PR_ACTION}" != 'closed')
+        }
+      }
+
+      stage('Pre build preparation') {
+        steps {
+	  /* Set build result to UNKNOWN so we know we are starting up */
+          script {
+            env.JENKINS_BUILD_RESULT = 'UNKNOWN'
+          }
+
           call_build_script("${JENKINS_STOP_PREVIOUS_BUILD}")
-          call_build_script("${JENKINS_CLEANUP_DOCKER}")
+          call_build_script("${JENKINS_CLEANUP_BUILD_STATES}")
         }
       }
 
@@ -169,7 +181,7 @@ def call() {
           env.JENKINS_BUILD_RESULT = "${currentBuild.currentResult}"
 
           try {
-              call_build_script("${JENKINS_CLEANUP_DOCKER}")
+              call_build_script("${JENKINS_CLEANUP_BUILD_STATES}")
 
               deleteDir()
               dir("${JENKINS_WORKSPACE_AT}@tmp") {
@@ -224,7 +236,8 @@ def post_commit_status(event, state) {
     def data = """
         { "state": "${status}", \
           "context": "Jenkins Linux ${CPU_ARCH}", \
-          "description": "${desc} ${action} ${duration}" }
+          "description": "${desc} ${action} ${duration}", \
+          "target_url": "${BUILD_URL}" }
     """
 
     sh '''#!/bin/bash +x
