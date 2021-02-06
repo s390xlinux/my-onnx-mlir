@@ -91,21 +91,6 @@ def call() {
        */
       stage('Checkout PR source') {
         steps {
-          checkout_pr_source("${ONNX_MLIR_PR_REPO_URL}",
-                             "${ONNX_MLIR_PR_REMOTE}",
-                             "${ONNX_MLIR_PR_REFSPEC}",
-                             "${ONNX_MLIR_PR_BRANCH}",
-                             "${ONNX_MLIR_PR_ACTION}" != 'closed')
-        }
-      }
-
-      stage('Pre build preparation') {
-        steps {
-	  /* Set build result to UNKNOWN so we know we are starting up */
-          script {
-            env.JENKINS_BUILD_RESULT = 'UNKNOWN'
-          }
-
           /* uncomment for debugging */
           /*sh 'printenv'*/
           echo "CPU_ARCH                    = ${CPU_ARCH}"
@@ -133,6 +118,22 @@ def call() {
 
           post_commit_status("${x_github_event}", 'pending')
           set_build_name("${x_github_event}")
+
+          checkout_pr_source("${ONNX_MLIR_PR_REPO_URL}",
+                             "${ONNX_MLIR_PR_REMOTE}",
+                             "${ONNX_MLIR_PR_REFSPEC}",
+                             "${ONNX_MLIR_PR_BRANCH}",
+                             "${ONNX_MLIR_PR_ACTION}" != 'closed')
+        }
+      }
+
+      stage('Pre build preparation') {
+        steps {
+	  /* Set build result to UNKNOWN so we know we are starting up */
+          script {
+            env.JENKINS_BUILD_RESULT = 'UNKNOWN'
+          }
+
           call_build_script("${JENKINS_STOP_PREVIOUS_BUILD}")
           call_build_script("${JENKINS_CLEANUP_BUILD_STATES}")
         }
