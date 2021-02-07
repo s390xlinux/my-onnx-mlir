@@ -115,9 +115,6 @@ def call() {
           echo "ONNX_MLIR_PR_COMMIT_MESSAGE = ${ONNX_MLIR_PR_COMMIT_MESSAGE}"
           echo "ONNX_MLIR_PR_MERGED	    = ${ONNX_MLIR_PR_MERGED}"
 
-          post_commit_status("${x_github_event}", 'pending')
-          set_build_name("${x_github_event}")
-
           checkout_pr_source("${ONNX_MLIR_PR_REPO_URL}",
                              "${ONNX_MLIR_PR_REMOTE}",
                              "${ONNX_MLIR_PR_REFSPEC}",
@@ -135,6 +132,9 @@ def call() {
 
           call_build_script("${JENKINS_STOP_PREVIOUS_BUILD}")
           call_build_script("${JENKINS_CLEANUP_BUILD_STATES}")
+
+          post_commit_status("${x_github_event}", 'pending')
+          set_build_name("${x_github_event}")
         }
       }
 

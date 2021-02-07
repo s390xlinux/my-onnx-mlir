@@ -94,11 +94,13 @@ def get_remote_image_labels(user_name, image_name, image_tag, image_labels):
         resp.raise_for_status()
         access_token = resp.json()['token']
 
-        # Get manifest
+        # Get manifest, only v1 schema has labels so accept v1 only
         resp = requests.get(
             'https://registry-1.docker.io/v2/' +
             user_name + '/' + image_name + '/manifests/' + image_tag,
-            headers={ 'Authorization': 'Bearer ' + access_token })
+            headers={
+                'Accept': 'application/vnd.docker.distribution.manifest.v1+json',
+                'Authorization': 'Bearer ' + access_token })
         resp.raise_for_status()
 
         # v1Compatibility is a quoted JSON string, not a JSON object
