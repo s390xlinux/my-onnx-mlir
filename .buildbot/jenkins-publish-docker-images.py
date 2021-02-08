@@ -235,6 +235,10 @@ def publish_multiarch_manifest(user_name, image_name, multiarch_tag):
         resp = get_access_token(user_name, image_name, 'pull,push')
         access_token = resp.json()['token']
 
+        # For each arch, construct the manifest element needed for the
+        # manifest list by extracting fields from v1 and v2 image manifests.
+        # We get platform from v1 image manifest, and mediaType, size, and
+        # digest from v2 image manifest.
         mlist = []
         for image_tag in IMAGE_ARCHS:
             m = {}
@@ -253,17 +257,18 @@ def publish_multiarch_manifest(user_name, image_name, multiarch_tag):
 
             mlist.append(m)
 
-            resp = requests.put(
-                'https://registry-1.docker.io/v2/' +
-                user_name + '/' + image_name + '/manifests/' + multiarch_tag,
-                headers = { 'Content-Type': content_type,
-                            'Authorization': 'Bearer ' + access_token },
-                json = { 'schemaVersion': 2,
-                         'mediaType': content_type,
-                         'manifests': mlist })
-            resp.raise_for_status()
-            logging.info('publish %s/%s:%s', user_name, image_name, multiarch_tag)
-            logging.info('        %s', resp.headers['Docker-Content-Digest'])
+        # Make the REST call to PUT the multiarch manifest list.
+        resp = requests.put(
+            'https://registry-1.docker.io/v2/' +
+            user_name + '/' + image_name + '/manifests/' + multiarch_tag,
+            headers = { 'Content-Type': content_type,
+                        'Authorization': 'Bearer ' + access_token },
+            json = { 'schemaVersion': 2,
+                     'mediaType': content_type,
+                     'manifests': mlist })
+        resp.raise_for_status()
+        logging.info('publish %s/%s:%s', user_name, image_name, multiarch_tag)
+        logging.info('        %s', resp.headers['Docker-Content-Digest'])
     except:
         logging.info(sys.exc_info()[1])
 
