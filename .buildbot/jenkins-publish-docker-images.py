@@ -39,6 +39,7 @@ IMAGE_LABELS               = { 'onnx-mlir-llvm-static': LLVM_PROJECT_LABELS,
                                'onnx-mlir-llvm-shared': LLVM_PROJECT_LABELS,
                                'onnx-mlir-dev': ONNX_MLIR_LABELS,
                                'onnx-mlir': ONNX_MLIR_LABELS }
+IMAGE_ARCHS                = { 's390x', 'amd64' }
 commit_sha1_date_label     = { 'onnx-mlir-llvm-static': 'llvm_project_sha1_date',
                                'onnx-mlir-llvm-shared': 'llvm_project_sha1_date',
                                'onnx-mlir-dev': 'onnx_mlir_sha1_date',
@@ -85,27 +86,39 @@ def get_local_image_labels(user_name, image_name, image_tag, image_labels):
                     'or has invalid labels'.format(
                         user_name, image_name, image_tag))
 
+def get_access_token(user_name, image_name, action):
+    resp = requests.get(
+        'https://auth.docker.io/token' +
+        '?service=registry.docker.io' +
+        '&scope=repository:' + user_name + '/' + image_name + ':'+ action,
+        auth=(dockerhub_user_name, dockerhub_user_token))
+    resp.raise_for_status()
+    return resp
+
+def get_image_manifest(user_name, image_name, image_tag,
+                       schema_version, access_token):
+    resp = requests.get(
+        'https://registry-1.docker.io/v2/' +
+        user_name + '/' + image_name + '/manifests/' + image_tag,
+        headers={
+            'Accept': 'application/vnd.docker.distribution.manifest.' +
+                      schema_version + '+json',
+            'Authorization': 'Bearer ' + access_token })
+    resp.raise_for_status()
+    return resp
+
 # Get the labels of a docker image in the docker registry.
 # python docker SDK does not support this so we have to make
 # our own REST calls.
 def get_remote_image_labels(user_name, image_name, image_tag, image_labels):
     try:
         # Get access token
-        resp = requests.get(
-            'https://auth.docker.io/token?scope=repository:' +
-            user_name + '/' + image_name +
-            ':pull&service=registry.docker.io')
-        resp.raise_for_status()
+        resp = get_access_token(user_name, image_name, 'pull')
         access_token = resp.json()['token']
 
         # Get manifest, only v1 schema has labels so accept v1 only
-        resp = requests.get(
-            'https://registry-1.docker.io/v2/' +
-            user_name + '/' + image_name + '/manifests/' + image_tag,
-            headers={
-                'Accept': 'application/vnd.docker.distribution.manifest.v1+json',
-                'Authorization': 'Bearer ' + access_token })
-        resp.raise_for_status()
+        resp = get_image_manifest(
+            user_name, image_name, image_tag, 'v1', access_token)
 
         # v1Compatibility is a quoted JSON string, not a JSON object
         manifest = json.loads(resp.json()['history'][0]['v1Compatibility'])
@@ -213,6 +226,44 @@ def image_publishable(image_type, trigger_phrase):
     logging.info('publish skipped due to older or identical local image')
     return False
 
+# Publish multiarch manifest for an image
+def publish_multiarch_manifest(user_name, image_name, multiarch_tag):
+    try:
+        content_type = 'application/vnd.docker.distribution.manifest.list.v2+json'
+        access_token = get_access_token(user_name, image_name, 'pull,push')
+
+        mlist = []
+        for image_tag in IMAGE_ARCHS:
+            m = {}
+            resp = get_image_manifest(user_name, image_name, image_tag, 'v2')
+            m['mediaType'] = resp.headers['Content-Type']
+            m['size'] = len(resp.text)
+            m['digest'] = resp.headers['Docker-Content-Digest']
+
+            resp = get_image_manifest(user_name, image_name, image_tag, 'v1')
+            m['platform'] = {}
+            v1Compatibility = json.loads(resp.json()['history'][0]['v1Compatibility'])
+            m['platform']['architecture'] = v1Compatibility['architecture']
+            m['platform']['os'] = v1Compatibility['os']
+
+            mlist.append(m)
+
+            resp = requests.put(
+                'https://registry-1.docker.io/v2/' +
+                user_name + '/' + image_name + '/manifests/' + multiarch_tag,
+                headers = { 'Content-Type': content_type,
+                            'Authorization': 'Bearer ' + access_token },
+                json = { 'schemaVersion': 2,
+                         'mediaType': content_type,
+                         'manifests': mlist })
+            resp.raise_for_status()
+            logging.info('publish %s/%s:%s', user_name, image_name, multiarch_tag)
+            logging.info('        %s', resp.headers['Docker-Content-Digest'])
+    except:
+        logging.info(sys.exc_info()[1])
+
+# Publish an image if it should be published and publish multiarch manifest
+# for onnx-mlir-dev and onnx-mlir images if necessary.
 def publish_image(image_type, trigger_phrase):
 
     if not image_publishable(image_type, trigger_phrase):
@@ -246,6 +297,12 @@ def publish_image(image_type, trigger_phrase):
                   end = '', flush = True)
     finally:
         docker_api.remove_image(image_repo + ':' + cpu_arch, force = True)
+
+    # For onnx-mlir-dev and onnx-mlir images, we publish a multiarch
+    # manifest so we can pull the images without having to explicitly
+    # specify the arch tag.
+    if image_type == 'dev' or image_type == 'usr':
+        publish_multiarch_manifest(user_name, image_name, 'latest')
 
 def main():
     for image_type in [ 'static', 'shared', 'dev', 'usr' ]:
