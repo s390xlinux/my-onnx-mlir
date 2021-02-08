@@ -235,12 +235,14 @@ def publish_multiarch_manifest(user_name, image_name, multiarch_tag):
         mlist = []
         for image_tag in IMAGE_ARCHS:
             m = {}
-            resp = get_image_manifest(user_name, image_name, image_tag, 'v2')
+            resp = get_image_manifest(user_name, image_name, image_tag,
+                                      'v2', access_token)
             m['mediaType'] = resp.headers['Content-Type']
             m['size'] = len(resp.text)
             m['digest'] = resp.headers['Docker-Content-Digest']
 
-            resp = get_image_manifest(user_name, image_name, image_tag, 'v1')
+            resp = get_image_manifest(user_name, image_name, image_tag,
+                                      'v1', access_token)
             m['platform'] = {}
             v1Compatibility = json.loads(resp.json()['history'][0]['v1Compatibility'])
             m['platform']['architecture'] = v1Compatibility['architecture']
