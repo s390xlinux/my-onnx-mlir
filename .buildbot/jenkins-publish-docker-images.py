@@ -86,6 +86,7 @@ def get_local_image_labels(user_name, image_name, image_tag, image_labels):
                     'or has invalid labels'.format(
                         user_name, image_name, image_tag))
 
+# Make REST call to get the access token to operate on an image
 def get_access_token(user_name, image_name, action):
     resp = requests.get(
         'https://auth.docker.io/token' +
@@ -95,6 +96,7 @@ def get_access_token(user_name, image_name, action):
     resp.raise_for_status()
     return resp
 
+# Make REST call to get the v1 or v2 manifest of an image
 def get_image_manifest(user_name, image_name, image_tag,
                        schema_version, access_token):
     resp = requests.get(
@@ -230,7 +232,8 @@ def image_publishable(image_type, trigger_phrase):
 def publish_multiarch_manifest(user_name, image_name, multiarch_tag):
     try:
         content_type = 'application/vnd.docker.distribution.manifest.list.v2+json'
-        access_token = get_access_token(user_name, image_name, 'pull,push')
+        resp = get_access_token(user_name, image_name, 'pull,push')
+        access_token = resp.json()['token']
 
         mlist = []
         for image_tag in IMAGE_ARCHS:
