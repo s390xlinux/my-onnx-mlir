@@ -133,8 +133,8 @@ def call() {
           call_build_script("${JENKINS_STOP_PREVIOUS_BUILD}")
           call_build_script("${JENKINS_CLEANUP_BUILD_STATES}")
 
+          /* Set GitHub status after stopping previous build */
           post_commit_status("${x_github_event}", 'pending')
-          set_build_name("${x_github_event}")
         }
       }
 
