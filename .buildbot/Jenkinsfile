@@ -260,7 +260,7 @@ def post_pr_comment(url, msg) {
     sh '''#!/bin/bash +x
         curl -s ''' + url + ''' \
              -X POST \
-             -H "Accept: application/json" \
+             -H "Accept: application/vnd.github.v3+json" \
              -H "Authorization: token ${GITHUB_COMMIT_STATUS_TOKEN}" \
              -d \' ''' + data + ''' \' | \
         jq '{url: .url, created_at: .created_at, updated_at: .updated_at, body: .body}'
