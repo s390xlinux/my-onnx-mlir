@@ -208,7 +208,9 @@ def post_build_status(event, state) {
     def title    = "${ONNX_MLIR_PR_COMMIT_MESSAGE}".replace('\n', ' ')
     def phrase   = (event == 'issue_comment') ?
                    "${ONNX_MLIR_PR_PHRASE}" : "${ONNX_MLIR_PR_ACTION}"
-    def desc     = "Build [#${BUILD_NUMBER}](${BUILD_URL}) " + "[${phrase}] " +
+    def desc     = ("${ONNX_MLIR_PR_ACTION}" == 'push' ?
+                    "Build [#${BUILD_NUMBER}](${BUILD_URL}) " :
+                    "Build #${BUILD_NUMBER} ") + "[${phrase}] " +
                    title.substring(0,Math.min(title.length(),24)) + '...'
     def action   = (state == 'success') ? 'passed'  :
                    (state == 'failure') ? 'failed'  :
@@ -221,9 +223,9 @@ def post_build_status(event, state) {
      * for the pull request is already closed and commit status is no longer
      * updated. So we post the build status as a comment.
      */
-    if ("${ONNX_MLIR_PR_ACTION}" == 'push' && state != 'pending')
+    if ("${ONNX_MLIR_PR_ACTION}" == 'push')
         post_pr_comment("${ONNX_MLIR_PR_COMMENT_URL}",
-	                "Jenkins Linux ${CPU_ARCH} ${desc} ${action} ${duration}")
+	                "**Jenkins Linux ${CPU_ARCH}** ${desc} ${action} ${duration}")
     else
         post_pr_status("${ONNX_MLIR_PR_STATUS_URL}",
                        "${status}",
