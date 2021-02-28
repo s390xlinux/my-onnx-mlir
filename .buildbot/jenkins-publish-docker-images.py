@@ -148,7 +148,7 @@ def get_image_manifest_public(user_name, image_name, image_tag,
         url = ('https://registry-1.docker.io/v2/' +
                (user_name + '/' if user_name else '') +
                image_name + '/manifests/' + image_tag),
-        headers={ 'Accept': DOCKER_DIST_MANIFEST[schema_version],
+        headers={ 'Accept': DOCKER_DIST_MANIFESTS[schema_version],
                   'Authorization': 'Bearer ' + access_token })
     resp.raise_for_status()
     return resp
