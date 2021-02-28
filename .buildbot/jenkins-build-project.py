@@ -84,6 +84,7 @@ def get_proj_repo_info(image_type, local_repo):
     logging.info('commit sha1:     %s', exp_proj_repo_sha1)
     logging.info('commit date:     %s', exp_proj_repo_sha1_date)
     logging.info('dockerfile sha1: %s', exp_proj_repo_dockerfile_sha1)
+    logging.info('image filter:    %s', exp_proj_repo_filter)
 
     return { github_repo_name2 + '_sha1': exp_proj_repo_sha1,
              github_repo_name2 + '_sha1_date': exp_proj_repo_sha1_date,
@@ -128,7 +129,7 @@ def get_image_manifest_public(user_name, image_name, image_tag,
         url = ('https://registry-1.docker.io/v2/' +
                (user_name + '/' if user_name else '') +
                image_name + '/manifests/' + image_tag),
-        headers={ 'Accept': DOCKER_DIST_MANIFEST[schema_version],
+        headers={ 'Accept': DOCKER_DIST_MANIFESTS[schema_version],
                   'Authorization': 'Bearer ' + access_token })
     resp.raise_for_status()
     return resp

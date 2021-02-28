@@ -190,9 +190,10 @@ def extract_llvm_info():
         'llvm_project_dockerfile_sha1=' + exp_llvm_project_dockerfile_sha1 ] }
 
     logging.info('llvm-project expected')
-    logging.info('commit sha1     %s', exp_llvm_project_sha1)
-    logging.info('commit date     %s', exp_llvm_project_sha1_date)
-    logging.info('dockerfile sha1 %s', exp_llvm_project_dockerfile_sha1)
+    logging.info('commit sha1:     %s', exp_llvm_project_sha1)
+    logging.info('commit date:     %s', exp_llvm_project_sha1_date)
+    logging.info('dockerfile sha1: %s', exp_llvm_project_dockerfile_sha1)
+    logging.info('image filter:    %s', exp_llvm_project_filter)
 
     return { 'llvm_project_sha1': exp_llvm_project_sha1,
              'llvm_project_sha1_date': exp_llvm_project_sha1_date,
