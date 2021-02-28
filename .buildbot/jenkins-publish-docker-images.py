@@ -303,7 +303,7 @@ def publish_arch_image(host_name, user_name, image_name, image_tag,
 
     # If the arch tagged image already exists, a publish is ongoing so
     # wait for it to finish.
-    while adocker_api.images(name = arch_image):
+    while docker_api.images(name = arch_image):
         time.sleep(5)
 
     # Tag the image with arch
