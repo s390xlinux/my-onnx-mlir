@@ -84,6 +84,7 @@ def get_proj_repo_info(image_type, local_repo):
     logging.info('commit sha1:     %s', exp_proj_repo_sha1)
     logging.info('commit date:     %s', exp_proj_repo_sha1_date)
     logging.info('dockerfile sha1: %s', exp_proj_repo_dockerfile_sha1)
+    logging.info('image filter:    %s', exp_proj_repo_filter)
 
     return { github_repo_name2 + '_sha1': exp_proj_repo_sha1,
              github_repo_name2 + '_sha1_date': exp_proj_repo_sha1_date,
