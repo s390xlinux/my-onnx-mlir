@@ -95,9 +95,9 @@ def get_proj_repo_info(image_type, local_repo):
 def get_image_manifest_private(host_name, user_name, image_name, image_tag,
                                schema_version, login_name, login_token):
     resp = requests.get(
-        url = 'https://' + host_name + '/v2/' +
-              (user_name + '/' if user_name else '') +
-              image_name + '/manifests/' + image_tag,
+        url = ('https://' + host_name + '/v2/' +
+               (user_name + '/' if user_name else '') +
+               image_name + '/manifests/' + image_tag),
         headers = { 'Accept': DOCKER_DIST_MANIFESTS[schema_version] },
         auth = (login_name, login_token))
     resp.raise_for_status()
@@ -107,13 +107,13 @@ def get_image_manifest_private(host_name, user_name, image_name, image_tag,
 # public docker registry
 def get_access_token(user_name, image_name, action, login_name, login_token):
     resp = requests.get(
-        url = 'https://auth.docker.io/token' +
-              '?service=registry.docker.io' +
-              '&scope=repository:' +
-              (user_name + '/' if user_name else '') + image_name + ':'+ action,
+        url = ('https://auth.docker.io/token' +
+               '?service=registry.docker.io' +
+               '&scope=repository:' +
+               (user_name + '/' if user_name else '') + image_name + ':'+ action),
         auth = (login_name, login_token))
     resp.raise_for_status()
-    return resp
+    return resp.json()['token']
 
 # Make REST call to get the v1 or v2 manifest of an image from
 # public docker registry
@@ -121,14 +121,13 @@ def get_image_manifest_public(user_name, image_name, image_tag,
                               schema_version, login_name, login_token, access_token = None):
     # Get access token if not passed in
     if not access_token:
-        resp = get_access_token(user_name, image_name, 'pull', login_name, login_token)
-        access_token = resp.json()['token']
-
+        access_token = get_access_token(
+            user_name, image_name, 'pull', login_name, login_token)
     # Get manifest
     resp = requests.get(
-        url = 'https://registry-1.docker.io/v2/' +
-              (user_name + '/' if user_name else '') +
-              image_name + '/manifests/' + image_tag,
+        url = ('https://registry-1.docker.io/v2/' +
+               (user_name + '/' if user_name else '') +
+               image_name + '/manifests/' + image_tag),
         headers={ 'Accept': DOCKER_DIST_MANIFEST[schema_version],
                   'Authorization': 'Bearer ' + access_token })
     resp.raise_for_status()
@@ -150,9 +149,9 @@ def get_remote_image_labels(host_name, user_name, image_name, image_tag,
             get_image_manifest_public(user_name, image_name, image_tag,
                                       'v1', login_name, login_token))
 
-        image_full = (host_name + '/' if host_name else '') +
-                     (user_name + '/' if user_name else '') +
-                     image_name + ':' + image_tag
+        image_full = ((host_name + '/' if host_name else '') +
+                      (user_name + '/' if user_name else '') +
+                      image_name + ':' + image_tag)
 
         # v1Compatibility is a quoted JSON string, not a JSON object
         manifest = json.loads(resp.json()['history'][0]['v1Compatibility'])
@@ -181,9 +180,9 @@ def build_private_project(image_type, exp):
     login_token  = docker_registry_login_token
     image_name   = PROJECT_IMAGE[image_type]
     image_tag    = github_pr_number
-    image_repo   = (host_name + '/' if host_name else '') +
-                   (user_name + '/' if user_name else '') +
-                   image_name
+    image_repo   = ((host_name + '/' if host_name else '') +
+                    (user_name + '/' if user_name else '') +
+                    image_name)
     image_full   = image_repo + ':' + image_tag
     image_filter = exp[github_repo_name2 + '_filter']
     image_labels = PROJECT_LABELS
@@ -246,10 +245,10 @@ def build_private_project(image_type, exp):
                 decode = True,
                 rm = True,
                 buildargs = {
-                    'BASE_IMAGE': (host_name + '/' if host_name else '') +
-                                  (user_name + '/' if user_name else '') +
-                                  LLVM_PROJECT_IMAGE[image_type] + ':' +
-                                  github_pr_number,
+                    'BASE_IMAGE': ((host_name + '/' if host_name else '') +
+                                   (user_name + '/' if user_name else '') +
+                                   LLVM_PROJECT_IMAGE[image_type] + ':' +
+                                   github_pr_number),
                     GITHUB_REPO_NAME2 + '_SHA1': exp[github_repo_name2 + '_sha1'],
                     GITHUB_REPO_NAME2 + '_SHA1_DATE': exp[github_repo_name2 + '_sha1_date'],
                     GITHUB_REPO_NAME2 + '_DOCKERFILE_SHA1': exp[github_repo_name2 + '_dockerfile_sha1'],

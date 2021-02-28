@@ -72,9 +72,9 @@ def cleanup_docker_images(pr_number, dangling):
         host_name = docker_registry_host_name
         user_name = docker_registry_user_name
         for image_name in IMAGE_NAMES:
-            image_full = (host_name + '/' if host_name else '') +
-                         (user_name + '/' if user_name else '') +
-                         image_name + ':' + pr_number
+            image_full = ((host_name + '/' if host_name else '') +
+                          (user_name + '/' if user_name else '') +
+                          image_name + ':' + pr_number)
             images.append(image_full)
 
     for image in images:
