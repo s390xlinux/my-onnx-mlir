@@ -294,7 +294,7 @@ def image_publishable(host_name, user_name, image_name, image_tag,
     logging.info('publish skipped due to older or identical local image')
     return False
 
-def pushlish_arch_image(host_name, user_name, image_name, image_tag,
+def publish_arch_image(host_name, user_name, image_name, image_tag,
                         login_name, login_token):
     image_repo  = ((host_name + '/' if host_name else '') +
                    (user_name + '/' if user_name else '') + image_name)
