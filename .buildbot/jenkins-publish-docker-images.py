@@ -11,6 +11,9 @@ import time
 logging.basicConfig(
     level = logging.INFO, format = '[%(asctime)s] %(levelname)s: %(message)s')
 
+DOCKER_PUBLISH_CHECK_TIMEOUT  = 3600 # seconds
+DOCKER_PUBLISH_CHECK_INTERVAL = 60   # seconds
+
 cpu_arch                    = os.getenv('CPU_ARCH')
 docker_daemon_socket        = os.getenv('DOCKER_DAEMON_SOCKET')
 docker_registry_host_name   = os.getenv('DOCKER_REGISTRY_HOST_NAME')
@@ -302,9 +305,22 @@ def publish_arch_image(host_name, user_name, image_name, image_tag,
     arch_image  = image_repo + ':' + cpu_arch
 
     # If the arch tagged image already exists, a publish is ongoing so
-    # wait for it to finish.
-    while docker_api.images(name = arch_image):
-        time.sleep(5)
+    # wait for it to finish. We checkout every 60 seconds to see if the
+    # arch tagged image is gone, for up to an hour.
+    end_time = time.time() + DOCKER_PUBLISH_CHECK_TIMEOUT
+    id = []
+    while time.time() < end_time:
+        id =  docker_api.images(name = arch_image)
+        if id:
+            logging.info('image %s (%s) exists, wait %s seconds',
+                         arch_image, id[0][0:19], DOCKER_PUBLISH_CHECK_INTERVAL)
+            time.sleep(DOCKER_PUBLISH_CHECK_INTERVAL)
+        else:
+            break;
+
+    if id:
+        logging.info('image %s (%s) still exists after %s seconds, tagging forced',
+                     arch_image, id[0][0:19], DOCKER_PUBLISH_CHECK_TIMEOUT)
 
     # Tag the image with arch
     logging.info('tagging %s -> %s', pr_image, arch_image)
