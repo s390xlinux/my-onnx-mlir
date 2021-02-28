@@ -358,7 +358,7 @@ def publish_multiarch_manifest(host_name, user_name, image_name, image_tag,
                                            'v1', login_name, login_token)
                 if host_name else
                 get_image_manifest_public(user_name, image_name, image_tag,
-                                          'v1', login_name, login_token, access_token)
+                                          'v1', login_name, login_token, access_token))
             m['platform'] = {}
             v1Compatibility = json.loads(resp.json()['history'][0]['v1Compatibility'])
             m['platform']['architecture'] = v1Compatibility['architecture']
