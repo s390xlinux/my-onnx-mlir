@@ -76,8 +76,7 @@ docker_api                  = docker.APIClient(base_url=docker_daemon_socket)
 
 # Get the labels of a local docker image, raise exception
 # if image doesn't exist or has invalid labels.
-def get_local_image_labels(
-        host_name, user_name, image_name, image_tag, image_labels):
+def get_local_image_labels(host_name, user_name, image_name, image_tag, image_labels):
     image_full = ((host_name + '/' if host_name else '') +
                   (user_name + '/' if user_name else '') +
                   image_name + ':' + image_tag)
@@ -253,7 +252,7 @@ def image_publishable(host_name, user_name, image_name, image_tag,
     # If local image is missing or has invalid labels, exception
     # will be raised to fail the build.
     local_labels = get_local_image_labels(
-        user_name, image_name, image_tag, image_labels)
+        host_name, user_name, image_name, image_tag, image_labels)
     remote_labels = get_remote_image_labels(
         host_name, user_name, image_name, cpu_arch, image_labels, login_name, login_token)
 
