@@ -28,7 +28,7 @@ def call() {
         /* Each pull request has its own build directory so concurrent builds
          * of different pull requests will not trash each other.
          */
-        customWorkspace "${JENKINS_HOME}/workspace/${JOB_NAME}@pr_${PR_NUMBER}"
+        customWorkspace "${JENKINS_HOME}/workspace/${JOB_NAME}@pr_${GITHUB_PR_NUMBER}"
       }
     }
 
@@ -66,7 +66,7 @@ def call() {
        */
 
       /* We ask for this directory */
-      JENKINS_WORKSPACE = "${JENKINS_HOME}/workspace/${JOB_NAME}@pr_${PR_NUMBER}"
+      JENKINS_WORKSPACE = "${JENKINS_HOME}/workspace/${JOB_NAME}@pr_${GITHUB_PR_NUMBER}"
       /* We may get one with @2, @3, etc. appended */
       JENKINS_WORKSPACE_AT = "${WORKSPACE}"
 
