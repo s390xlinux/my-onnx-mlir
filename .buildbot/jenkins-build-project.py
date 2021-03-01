@@ -222,8 +222,12 @@ def build_private_project(image_type, exp):
                            if 'status' in line and 'progress' not in line else ''),
                           end='', flush=True)
 
-                docker_api.tag(image_repo + ':' + cpu_arch,
-                               image_repo, github_pr_number, force = True)
+                # Tag pulled arch specific image with pull request number
+                # then remove the arch specific image. Arch specific image
+                # only exists for the duration of publishing the image.
+                arch_image = image_repo + ':' + cpu_arch
+                docker_api.tag(arch_image, image_repo, github_pr_number, force = True)
+                docker_api.remove_image(arch_image, force = True)
 
                 id = docker_api.images(name = image_full,
                                        all = False, quiet = True)

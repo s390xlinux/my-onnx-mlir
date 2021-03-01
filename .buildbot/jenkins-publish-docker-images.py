@@ -310,7 +310,7 @@ def publish_arch_image(host_name, user_name, image_name, image_tag,
     end_time = time.time() + DOCKER_PUBLISH_CHECK_TIMEOUT
     id = []
     while time.time() < end_time:
-        id = docker_api.images(name = arch_image, all = Falsee, quiet = True)
+        id = docker_api.images(name = arch_image, all = False, quiet = True)
         if id:
             logging.info('image %s (%s) exists, wait %s seconds',
                          arch_image, id[0][0:19], DOCKER_PUBLISH_CHECK_INTERVAL)
