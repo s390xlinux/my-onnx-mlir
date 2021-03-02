@@ -232,8 +232,10 @@ def build_private_project(image_type, exp):
                            if 'status' in line and 'progress' not in line else ''),
                           end='', flush=True)
 
-                # Tag pulled arch specific image with pull request number
+                # Tag pulled arch image with pull request number then remove
+                # the arch image
                 docker_api.tag(image_arch, image_repo, github_pr_number, force = True)
+                docker_api.remove_image(image_arch, force = True)
 
                 # For logging purpose only
                 id = docker_api.images(name = image_full,
@@ -244,7 +246,6 @@ def build_private_project(image_type, exp):
             logging.info(sys.exc_info()[1])
         # Remove arch image and release lock regardless of exception or not
         finally:
-            docker_api.remove_image(image_arch, force = True)
             docker_rwlock.release_read_lock()
             logging.info('released read lock for pulling %s', image_arch)
 
