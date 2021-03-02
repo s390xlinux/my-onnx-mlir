@@ -344,7 +344,7 @@ def publish_arch_image(host_name, user_name, image_name, image_tag,
         docker_api.remove_image(arch_image, force = True)
 
 # Publish multiarch manifest for an image
-def publish_multiarch_manifest(host_name, user_name, image_name, image_tag,
+def publish_multiarch_manifest(host_name, user_name, image_name, manifest_tag,
                                login_name, login_token):
     try:
         if not host_name:
@@ -355,7 +355,7 @@ def publish_multiarch_manifest(host_name, user_name, image_name, image_tag,
         # manifest list by extracting fields from v1 and v2 image manifests.
         # We get platform from v1 image manifest, and mediaType, size, and
         # digest from v2 image manifest.
-        mlist = []
+        manifest_list = []
         for image_tag in IMAGE_ARCHS:
             m = {}
             resp = (
@@ -379,17 +379,19 @@ def publish_multiarch_manifest(host_name, user_name, image_name, image_tag,
             m['platform']['architecture'] = v1Compatibility['architecture']
             m['platform']['os'] = v1Compatibility['os']
 
-            mlist.append(m)
+            manifest_list.append(m)
 
         # Make the REST call to PUT the multiarch manifest list.
         resp = (
-            put_image_manifest_private(host_name, user_name, image_name, image_tag,
-                                       mlist, login_name, login_token)
+            put_image_manifest_private(
+                host_name, user_name, image_name, manifest_tag,
+                manifest_list, login_name, login_token)
             if host_name else
-            put_image_manifest_public(user_name, image_name, image_tag,
-                                      mlist, login_name, login_token, access_token))
+            put_image_manifest_public(
+                user_name, image_name, manifest_tag,
+                manifest_list, login_name, login_token, access_token))
 
-        logging.info('publish %s/%s:%s', user_name, image_name, image_tag)
+        logging.info('publish %s/%s:%s', user_name, image_name, manifest_tag)
         logging.info('        %s', resp.headers['Docker-Content-Digest'])
     except:
         logging.info(sys.exc_info()[1])
