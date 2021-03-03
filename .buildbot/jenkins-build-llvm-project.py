@@ -2,6 +2,7 @@
 
 import datetime
 import docker
+import fasteners
 import hashlib
 import json
 import logging
@@ -16,6 +17,7 @@ logging.basicConfig(
 READ_CHUNK_SIZE             = 1024*1024
 
 cpu_arch                    = os.getenv('CPU_ARCH')
+docker_pushpull_rwlock      = os.getenv('DOCKER_PUSHPULL_RWLOCK')
 docker_daemon_socket        = os.getenv('DOCKER_DAEMON_SOCKET')
 docker_registry_host_name   = os.getenv('DOCKER_REGISTRY_HOST_NAME')
 docker_registry_user_name   = os.getenv('DOCKER_REGISTRY_USER_NAME')
@@ -46,6 +48,7 @@ DOCKER_DIST_MANIFESTS       = {
     'v1': 'application/vnd.docker.distribution.manifest.v1+json',
     'v2': 'application/vnd.docker.distribution.manifest.v2+json' }
 
+docker_rwlock               = fasteners.InterProcessReaderWriterLock(docker_pushpull_rwlock)
 docker_api                  = docker.APIClient(base_url=docker_daemon_socket)
 
 # Validate whether the commit sha1 date is a valid UTC ISO 8601 date
@@ -215,8 +218,9 @@ def setup_private_llvm(image_type, exp):
                     (user_name + '/' if user_name else '') +
                     image_name)
     image_full   = image_repo + ':' + image_tag
+    image_arch   = image_repo + ':' + cpu_arch
     image_filter = exp['llvm_project_filter']
-    image_labels  = LLVM_PROJECT_LABELS
+    image_labels = LLVM_PROJECT_LABELS
 
     # First look for a local llvm-project image for the pull request that
     # was built by a previous build job. We can use it if it has both the
@@ -229,16 +233,22 @@ def setup_private_llvm(image_type, exp):
     # If a local useable llvm-project image was not found, see if we can
     # pull one from the registry.
     if not id:
-        labels = get_remote_image_labels(host_name, user_name, image_name, cpu_arch,
-                                         image_labels, login_name, login_token)
+        # Acquire read lock to pull the arch image. This is to serialize
+        # against other PR merges trying to push (writers) the arch image.
+        # PR builds trying to pull (readers) the arch image can go concurrently.
+        logging.info('acquiring read lock for pulling %s', image_arch)
+        docker_rwlock.acquire_read_lock()
+        try:
+            labels = get_remote_image_labels(host_name, user_name, image_name, cpu_arch,
+                                             image_labels, login_name, login_token)
 
-        # Image in registry has expected llvm-project commit sha1 and
-        # Dockerfile.llvm-project sha1, pull and tag it with pull request
-        # number for our private use.
-        if (labels and
-            labels['llvm_project_sha1'] == exp['llvm_project_sha1'] and
-            labels['llvm_project_dockerfile_sha1'] == exp['llvm_project_dockerfile_sha1']):
-            try:
+            # Image in registry has expected llvm-project commit sha1 and
+            # Dockerfile.llvm-project sha1, pull and tag it with pull request
+            # number for our private use.
+            if (labels and
+                labels['llvm_project_sha1'] == exp['llvm_project_sha1'] and
+                labels['llvm_project_dockerfile_sha1'] == exp['llvm_project_dockerfile_sha1']):
+
                 for line in docker_api.pull(image_repo, tag = cpu_arch,
                                             stream = True, decode = True):
                     print((line['id']+': '
@@ -247,19 +257,22 @@ def setup_private_llvm(image_type, exp):
                            if 'status' in line and 'progress' not in line else ''),
                           end='', flush=True)
 
-                # Tag pulled arch specific image with pull request number
-                # then remove the arch specific image. Arch specific image
-                # only exists for the duration of publishing the image.
-                arch_image = image_repo + ':' + cpu_arch
-                docker_api.tag(arch_image, image_repo, github_pr_number, force = True)
-                docker_api.remove_image(arch_image, force = True)
+                # Tag pulled arch image with pull request number then remove
+                # the arch image
+                docker_api.tag(image_arch, image_repo, github_pr_number, force = True)
+                docker_api.remove_image(image_arch, force = True)
 
+                # For logging purpose only
                 id = docker_api.images(name = image_full,
                                        all = False, quiet = True)
-                logging.info('image %s (%s) pulled', image_full, id[0][0:19])
+                logging.info('image %s (%s) tagged', image_full, id[0][0:19])
                 return
-            except:
-                labels['llvm_project_sha1_date'] = ''
+        except:
+            labels['llvm_project_sha1_date'] = ''
+        # Remove arch image and release lock regardless of exception or not
+        finally:
+            docker_rwlock.release_read_lock()
+            logging.info('released read lock for pulling %s', image_arch)
 
         # Build llvm-project locally if one of the following is true
         #

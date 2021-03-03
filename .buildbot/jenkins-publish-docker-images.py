@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import docker
+import fasteners
 import json
 import logging
 import os
@@ -11,10 +12,8 @@ import time
 logging.basicConfig(
     level = logging.INFO, format = '[%(asctime)s] %(levelname)s: %(message)s')
 
-DOCKER_PUBLISH_CHECK_TIMEOUT  = 3600 # seconds
-DOCKER_PUBLISH_CHECK_INTERVAL = 60   # seconds
-
 cpu_arch                    = os.getenv('CPU_ARCH')
+docker_pushpull_rwlock      = os.getenv('DOCKER_PUSHPULL_RWLOCK')
 docker_daemon_socket        = os.getenv('DOCKER_DAEMON_SOCKET')
 docker_registry_host_name   = os.getenv('DOCKER_REGISTRY_HOST_NAME')
 docker_registry_user_name   = os.getenv('DOCKER_REGISTRY_USER_NAME')
@@ -55,7 +54,8 @@ dockerfile_sha1_label       = { github_repo_name + '-llvm-static': 'llvm_project
 pr_mergeable_state          = {
     'behind':    { 'mergeable': False,
                    'desc': 'the head ref is out of date' },
-    'blocked':   { 'mergeable': False,
+    # see comments in get_pr_mergeable_state
+    'blocked':   { 'mergeable': True,
                    'desc': 'the merge is blocked' },
     'clean':     { 'mergeable': True,
                    'desc': 'mergeable and passing commit status' },
@@ -75,6 +75,7 @@ DOCKER_DIST_MANIFESTS       = {
     'v2': 'application/vnd.docker.distribution.manifest.v2+json' }
 DOCKER_DIST_MANIFEST_LIST   = 'application/vnd.docker.distribution.manifest.list.v2+json'
 
+docker_rwlock               = fasteners.InterProcessReaderWriterLock(docker_pushpull_rwlock)
 docker_api                  = docker.APIClient(base_url=docker_daemon_socket)
 
 # Get the labels of a local docker image, raise exception
@@ -261,10 +262,17 @@ def image_publishable(host_name, user_name, image_name, image_tag,
 
     # If url is 'none', it's a push event from merging so skip
     # mergeable state check.
+    #
+    # Note that when our (and/or some other) build is marked as required,
+    # while the build(s) are ongoing, the mergeable state will be "blocked".
+    # So for publish triggered by "publish this please" phrase, we have a
+    # catch 22 problem. But if we can come to this point, we know that at
+    # least our build successfully built the docker images. So we allow
+    # the blocked mergeable state to publish our images.
     if github_pr_request_url != 'none':
         state = get_pr_mergeable_state(github_pr_request_url, github_repo_access_token)
-        logging.info('mergeable state %s, %s',
-                     state, pr_mergeable_state[state]['desc'])
+        logging.info('pull request url: %s, mergeable state: %s, %s',
+                     github_pr_request_url, state, pr_mergeable_state[state]['desc'])
         if not pr_mergeable_state[state]['mergeable']:
             logging.info('publish skipped due to unmergeable state')
             return False
@@ -301,35 +309,23 @@ def publish_arch_image(host_name, user_name, image_name, image_tag,
                         login_name, login_token):
     image_repo  = ((host_name + '/' if host_name else '') +
                    (user_name + '/' if user_name else '') + image_name)
-    pr_image    = image_repo + ':' + image_tag
-    arch_image  = image_repo + ':' + cpu_arch
+    image_pr    = image_repo + ':' + image_tag
+    image_arch  = image_repo + ':' + cpu_arch
 
-    # If the arch tagged image already exists, a publish is ongoing so
-    # wait for it to finish. We checkout every 60 seconds to see if the
-    # arch tagged image is gone, for up to an hour.
-    end_time = time.time() + DOCKER_PUBLISH_CHECK_TIMEOUT
-    id = []
-    while time.time() < end_time:
-        id = docker_api.images(name = arch_image, all = False, quiet = True)
-        if id:
-            logging.info('image %s (%s) exists, wait %s seconds',
-                         arch_image, id[0][0:19], DOCKER_PUBLISH_CHECK_INTERVAL)
-            time.sleep(DOCKER_PUBLISH_CHECK_INTERVAL)
-        else:
-            break;
-
-    if id:
-        logging.info('image %s (%s) still exists after %s seconds, tagging forced',
-                     arch_image, id[0][0:19], DOCKER_PUBLISH_CHECK_TIMEOUT)
-
-    # Tag the image with arch
-    logging.info('tagging %s -> %s', pr_image, arch_image)
-    docker_api.tag(pr_image, image_repo, cpu_arch)
-
-    # Push the image tagged with arch then remove it, regardless of
-    # whether the push worked or not.
-    logging.info('pushing %s', arch_image)
+    # Acquire write lock to prepare for tagging to the arch image and
+    # pushing it. This is to serialize against other PR merges trying
+    # to push (writers) and/or other PR builds trying to pull (readers)
+    # the arch image.
+    logging.info('acquiring write lock for tagging and pushing %s', image_arch)
+    docker_rwlock.acquire_write_lock()
     try:
+        # Tag the image with arch
+        logging.info('tagging %s -> %s', image_pr, image_arch)
+        docker_api.tag(image_pr, image_repo, cpu_arch)
+
+        # Push the image tagged with arch then remove it, regardless of
+        # whether the push worked or not.
+        logging.info('pushing %s', image_arch)
         for line in docker_api.push(repository = image_repo,
                                     tag = cpu_arch,
                                     auth_config = { 'username': login_name,
@@ -340,8 +336,11 @@ def publish_arch_image(host_name, user_name, image_name, image_tag,
                   (line['status'] + '\n'
                    if 'status' in line and 'progress' not in line else ''),
                   end = '', flush = True)
+    # Remove arch image and release lock regardless of exception or not
     finally:
-        docker_api.remove_image(arch_image, force = True)
+        docker_api.remove_image(image_arch, force = True)
+        docker_rwlock.release_write_lock()
+        logging.info('released write lock for tagging and pushing %s', image_arch)
 
 # Publish multiarch manifest for an image
 def publish_multiarch_manifest(host_name, user_name, image_name, manifest_tag,
