@@ -264,6 +264,10 @@ def image_publishable(host_name, user_name, image_name, image_tag,
     #
     # Note that when our (and/or some other) build is marked as required,
     # while the build(s) are ongoing, the mergeable state will be "blocked".
+    # So for publish triggered by "publish this please" phrase, we have a
+    # catch 22 problem. But if we can come to this point, we know that at
+    # least our build successfully built the docker images. So we can ignore
+    # the blocked mergeable state and publish our images.
     if github_pr_request_url != 'none':
         state = get_pr_mergeable_state(github_pr_request_url, github_repo_access_token)
         logging.info('mergeable state %s, %s',

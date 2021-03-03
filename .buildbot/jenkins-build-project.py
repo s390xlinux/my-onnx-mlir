@@ -286,7 +286,6 @@ def build_private_project(image_type, exp):
         logging.info('image %s (%s) found', image_full, id[0][0:19])
 
 def main():
-    raise Exception('fail intentionally')
     build_private_project('dev', get_proj_repo_info('dev', '.'))
     build_private_project('usr', get_proj_repo_info('usr', '.'))
 
