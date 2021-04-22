@@ -143,10 +143,9 @@ def call() {
           script {
 	    /* Set build result to UNKNOWN so we know we are starting up */
             env.JENKINS_BUILD_RESULT = 'UNKNOWN'
-	    env.JENKINS_BUILD_STOPPED = 'false'
-
-            call_build_script("${JENKINS_STOP_PREVIOUS_BUILD}")
-            call_build_script("${JENKINS_CLEANUP_BUILD_STATES}")
+	    env.JENKINS_BUILD_STOPPED = sh(returnStdout: true,
+                                           script: "${JENKINS_STOP_PREVIOUS_BUILD}")
+            sh "${JENKINS_CLEANUP_BUILD_STATES}"
 
             /* When merging, frontend script already posted comments so
              * we don't do it again to avoid cluttering the comments page.
@@ -154,7 +153,7 @@ def call() {
              * we might have stopped one or more previous builds which
              * would have set their status to "aborted" during cleanup.
              */
-	    echo "${JENKINS_BUILD_STOPPED}"
+	    echo "JENKINS_BUILD_STOPPED = ${JENKINS_BUILD_STOPPED}"
             if ("${GITHUB_PR_ACTION}" != 'push' && "${JENKINS_BUILD_STOPPED}" == 'true')
 	      post_build_status("${GITHUB_EVENT}", 'pending')
           }
@@ -165,7 +164,7 @@ def call() {
         when { not { environment name: 'GITHUB_PR_ACTION',
                      value: 'closed' } }
         steps {
-          call_build_script("${JENKINS_BUILD_LLVM_PROJECT}")
+          sh "${JENKINS_BUILD_LLVM_PROJECT}"
         }
       }
 
@@ -173,7 +172,7 @@ def call() {
         when { not { environment name: 'GITHUB_PR_ACTION',
                      value: 'closed' } }
         steps {
-          call_build_script("${JENKINS_BUILD_PROJECT}")
+          sh "${JENKINS_BUILD_PROJECT}"
         }
       }
 
@@ -184,7 +183,7 @@ def call() {
                        value: 'publish' }
         }
         steps {
-          call_build_script("${JENKINS_PUBLISH_DOCKER_IMAGES}")
+          sh "${JENKINS_PUBLISH_DOCKER_IMAGES}"
         }
       }
     } // stages
