@@ -140,22 +140,21 @@ def call() {
 
       stage('Pre build preparation') {
         steps {
-	  /* Set build result to UNKNOWN so we know we are starting up */
           script {
+	    /* Set build result to UNKNOWN so we know we are starting up */
             env.JENKINS_BUILD_RESULT = 'UNKNOWN'
-          }
+	    env.JENKINS_BUILD_STOPPED = 'false'
 
-          call_build_script("${JENKINS_STOP_PREVIOUS_BUILD}")
-          call_build_script("${JENKINS_CLEANUP_BUILD_STATES}")
+            call_build_script("${JENKINS_STOP_PREVIOUS_BUILD}")
+            call_build_script("${JENKINS_CLEANUP_BUILD_STATES}")
 
-          /* When merging, frontend script already posted comments so
-           * we don't do it again to avoid cluttering the comments page.
-           * Otherwise, we update the github status again here because
-           * we might have stopped one or more previous builds which
-           * would have set their status to "aborted" during cleanup.
-           */
-          script {
-            if ("${GITHUB_PR_ACTION}" != 'push')
+            /* When merging, frontend script already posted comments so
+             * we don't do it again to avoid cluttering the comments page.
+             * Otherwise, we update the github status again here because
+             * we might have stopped one or more previous builds which
+             * would have set their status to "aborted" during cleanup.
+             */
+            if ("${GITHUB_PR_ACTION}" != 'push' && "${JENKINS_BUILD_STOPPED}" == 'true')
 	      post_build_status("${GITHUB_EVENT}", 'pending')
           }
         }
