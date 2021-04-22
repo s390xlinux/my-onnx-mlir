@@ -96,8 +96,10 @@ def stop_previous_build(job_name, build_number, pr_number):
             str(builds_still_running), pr_number, JENKINS_STOP_BUILD_TIMEOUT))
     # Old running builds found and we successfully stopped all of them
     elif builds_found:
-        os.environ['env.JENKINS_BUILD_STOPPED'] = 'true'
+        print('true')
     # Otherwise, no old running builds found
+    else:
+        print('false')
 
     logging.info('Runninng job %s build #%s for pull request #%s',
                  job_name, build_number, pr_number)
