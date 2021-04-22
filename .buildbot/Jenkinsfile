@@ -143,22 +143,15 @@ def call() {
           script {
 	    /* Set build result to UNKNOWN so we know we are starting up */
             env.JENKINS_BUILD_RESULT = 'UNKNOWN'
-	    env.JENKINS_BUILD_STOPPED = sh(returnStdout: true,
-                                           script: "${JENKINS_STOP_PREVIOUS_BUILD}")
-            sh "${JENKINS_CLEANUP_BUILD_STATES}"
-
-            /* When merging, frontend script already posted comments so
-             * we don't do it again to avoid cluttering the comments page.
-             * Otherwise, we update the github status again here because
-             * we might have stopped one or more previous builds which
-             * would have set their status to "aborted" during cleanup.
-             */
-	    echo "JENKINS_BUILD_STOPPED = ${JENKINS_BUILD_STOPPED}"
-            if ("${GITHUB_PR_ACTION}" != 'push' && "${JENKINS_BUILD_STOPPED}" == 'true') {
-              echo 'Updating github status again after stopping old builds'
-	      post_build_status("${GITHUB_EVENT}", 'pending')
-            }
           }
+
+          /* The stopped build will post github status with 'aborted'.
+	   * However, the status has already been updated with the new
+	   * commit sha with 'pending' by the frontend script. So the
+	   * 'aborted' status will not appear on the pull request page.
+	   */
+          sh "${JENKINS_STOP_PREVIOUS_BUILD}"
+          sh "${JENKINS_CLEANUP_BUILD_STATES}"
         }
       }
 
