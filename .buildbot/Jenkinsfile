@@ -154,8 +154,10 @@ def call() {
              * would have set their status to "aborted" during cleanup.
              */
 	    echo "JENKINS_BUILD_STOPPED = ${JENKINS_BUILD_STOPPED}"
-            if ("${GITHUB_PR_ACTION}" != 'push' && "${JENKINS_BUILD_STOPPED}" == 'true')
+            if ("${GITHUB_PR_ACTION}" != 'push' && "${JENKINS_BUILD_STOPPED}" == 'true') {
+              echo 'Updating github status again after stopping old builds'
 	      post_build_status("${GITHUB_EVENT}", 'pending')
+            }
           }
         }
       }
