@@ -21,6 +21,7 @@ docker_registry_login_token = os.getenv('DOCKER_REGISTRY_LOGIN_TOKEN')
 github_repo_access_token    = os.getenv('GITHUB_REPO_ACCESS_TOKEN')
 github_repo_name            = os.getenv('GITHUB_REPO_NAME')
 github_repo_name2           = os.getenv('GITHUB_REPO_NAME').replace('-', '_')
+github_pr_baseref           = os.getenv('GITHUB_PR_BASEREF')
 github_pr_number            = os.getenv('GITHUB_PR_NUMBER')
 github_pr_phrase            = os.getenv('GITHUB_PR_PHRASE')
 github_pr_request_url       = os.getenv('GITHUB_PR_REQUEST_URL')
@@ -403,7 +404,8 @@ def publish_image(image_type, trigger_phrase):
     login_name   = docker_registry_login_name
     login_token  = docker_registry_login_token
 
-    image_name   = IMAGE_NAME[image_type]
+    image_name   = (IMAGE_NAME[image_type] +
+                    ('.' + github_pr_baseref if github_pr_baseref != 'master' else ''))
     image_tag    = IMAGE_TAG[trigger_phrase]
     image_labels = IMAGE_LABELS[image_name]
 
