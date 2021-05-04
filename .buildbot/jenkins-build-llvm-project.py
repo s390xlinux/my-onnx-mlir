@@ -26,6 +26,7 @@ docker_registry_login_token = os.getenv('DOCKER_REGISTRY_LOGIN_TOKEN')
 github_repo_access_token    = os.getenv('GITHUB_REPO_ACCESS_TOKEN')
 github_repo_name            = os.getenv('GITHUB_REPO_NAME')
 github_repo_name2           = os.getenv('GITHUB_REPO_NAME').replace('-', '_')
+github_pr_baseref           = os.getenv('GITHUB_PR_BASEREF')
 github_pr_number            = os.getenv('GITHUB_PR_NUMBER')
 github_pr_number2           = os.getenv('GITHUB_PR_NUMBER2')
 
@@ -212,7 +213,8 @@ def setup_private_llvm(image_type, exp):
     user_name    = docker_registry_user_name
     login_name   = docker_registry_login_name
     login_token  = docker_registry_login_token
-    image_name   = LLVM_PROJECT_IMAGE[image_type]
+    image_name   = (LLVM_PROJECT_IMAGE[image_type] +
+                    ('.' + github_pr_baseref if github_pr_baseref != 'master' else ''))
     image_tag    = github_pr_number
     image_repo   = ((host_name + '/' if host_name else '') +
                     (user_name + '/' if user_name else '') +
