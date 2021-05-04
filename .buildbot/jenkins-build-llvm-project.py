@@ -220,7 +220,8 @@ def setup_private_llvm(image_type, exp):
     user_name    = docker_registry_user_name
     login_name   = docker_registry_login_name
     login_token  = docker_registry_login_token
-    image_name   = LLVM_PROJECT_IMAGE[image_type]
+    image_name   = (LLVM_PROJECT_IMAGE[image_type] +
+                    ('.' + github_pr_baseref if github_pr_baseref != 'master' else ''))
     image_tag    = github_pr_number
     image_repo   = ((host_name + '/' if host_name else '') +
                     (user_name + '/' if user_name else '') +
