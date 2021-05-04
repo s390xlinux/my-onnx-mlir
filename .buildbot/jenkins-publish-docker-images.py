@@ -86,7 +86,7 @@ dockerfile_sha1_label       = { python_static_image_name: 'llvm_project_dockerfi
 pr_mergeable_state          = {
     'behind':    { 'mergeable': False,
                    'desc': 'the head ref is out of date' },
-    # see comments in get_pr_mergeable_state
+    # see comments in image_publishable
     'blocked':   { 'mergeable': True,
                    'desc': 'the merge is blocked' },
     'clean':     { 'mergeable': True,
@@ -97,7 +97,7 @@ pr_mergeable_state          = {
                    'desc': 'the merge is blocked due to the pull request being a draft' },
     'has_hooks': { 'mergeable': True,
                    'desc': 'mergeable with passing commit status and pre-receive hooks' },
-    'unknown':   { 'mergeable': False,
+    'unknown':   { 'mergeable': True,
                    'desc': 'the state cannot currently be determined' },
     'unstable':  { 'mergeable': True,
                    'desc': 'mergeable with non-passing commit status' } }
@@ -307,8 +307,7 @@ def image_publishable(host_name, user_name,
         logging.info('pull request url: %s, mergeable state: %s, %s',
                      github_pr_request_url, state, pr_mergeable_state[state]['desc'])
         if not pr_mergeable_state[state]['mergeable']:
-            logging.info('publish skipped due to unmergeable state')
-            return False
+            raise Exception('publish aborted due to unmergeable state')
     if not remote_labels:
         logging.info('publish due to invalid remote labels')
         return True
