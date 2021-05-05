@@ -30,12 +30,19 @@ github_pr_baseref           = os.getenv('GITHUB_PR_BASEREF')
 github_pr_number            = os.getenv('GITHUB_PR_NUMBER')
 github_pr_number2           = os.getenv('GITHUB_PR_NUMBER2')
 
+docker_static_image_name    = (github_repo_name + '-llvm-static' +
+                               ('.' + github_pr_baseref
+                                if github_pr_baseref != 'master' else ''))
+docker_shared_image_name    = (github_repo_name + '-llvm-shared' +
+                               ('.' + github_pr_baseref
+                                if github_pr_baseref != 'master' else ''))
+
 LLVM_PROJECT_SHA1_FILE      = 'utils/clone-mlir.sh'
 LLVM_PROJECT_SHA1_REGEX     = 'git checkout ([0-9a-f]+)'
 LLVM_PROJECT_DOCKERFILE     = 'docker/Dockerfile.llvm-project'
 LLVM_PROJECT_GITHUB_URL     = 'https://api.github.com/repos/llvm/llvm-project'
-LLVM_PROJECT_IMAGE          = { 'static': github_repo_name + '-llvm-static',
-                                'shared': github_repo_name + '-llvm-shared' }
+LLVM_PROJECT_IMAGE          = { 'static': docker_static_image_name,
+                                'shared': docker_shared_image_name }
 BUILD_SHARED_LIBS           = { 'static': 'off',
                                 'shared': 'on' }
 LLVM_PROJECT_LABELS         = [ 'llvm_project_sha1',
@@ -213,8 +220,7 @@ def setup_private_llvm(image_type, exp):
     user_name    = docker_registry_user_name
     login_name   = docker_registry_login_name
     login_token  = docker_registry_login_token
-    image_name   = (LLVM_PROJECT_IMAGE[image_type] +
-                    ('.' + github_pr_baseref if github_pr_baseref != 'master' else ''))
+    image_name   = LLVM_PROJECT_IMAGE[image_type]
     image_tag    = github_pr_number
     image_repo   = ((host_name + '/' if host_name else '') +
                     (user_name + '/' if user_name else '') +

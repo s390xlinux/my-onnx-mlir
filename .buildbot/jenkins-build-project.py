@@ -29,10 +29,23 @@ github_pr_baseref           = os.getenv('GITHUB_PR_BASEREF')
 github_pr_number            = os.getenv('GITHUB_PR_NUMBER')
 github_pr_number2           = os.getenv('GITHUB_PR_NUMBER2')
 
-LLVM_PROJECT_IMAGE          = { 'dev': github_repo_name + '-llvm-static',
-                                'usr': github_repo_name + '-llvm-shared' }
-PROJECT_IMAGE               = { 'dev': github_repo_name + '-dev',
-                                'usr': github_repo_name }
+docker_static_image_name    = (github_repo_name + '-llvm-static' +
+                               ('.' + github_pr_baseref
+                                if github_pr_baseref != 'master' else ''))
+docker_shared_image_name    = (github_repo_name + '-llvm-shared' +
+	                       ('.' + github_pr_baseref
+                                if github_pr_baseref != 'master' else ''))
+docker_dev_image_name       = (github_repo_name + '-dev' +
+                               ('.' + github_pr_baseref
+                                if github_pr_baseref != 'master' else ''))
+docker_usr_image_name       = (github_repo_name +
+                               ('.' + github_pr_baseref
+                                if github_pr_baseref != 'master' else ''))
+
+LLVM_PROJECT_IMAGE          = { 'dev': docker_static_image_name,
+                                'usr': docker_shared_image_name }
+PROJECT_IMAGE               = { 'dev': docker_dev_image_name,
+                                'usr': docker_usr_image_name }
 PROJECT_DOCKERFILE          = { 'dev': 'docker/Dockerfile.' + github_repo_name + '-dev',
                                 'usr': 'docker/Dockerfile.' + github_repo_name }
 PROJECT_LABELS              = [ github_repo_name2 + '_sha1',
@@ -183,14 +196,12 @@ def build_private_project(image_type, exp):
     user_name       = docker_registry_user_name
     login_name      = docker_registry_login_name
     login_token     = docker_registry_login_token
-    base_image_name = (LLVM_PROJECT_IMAGE[image_type] +
-                       ('.' + github_pr_baseref if github_pr_baseref != 'master' else ''))
+    base_image_name = LLVM_PROJECT_IMAGE[image_type]
     base_image_repo = ((host_name + '/' if host_name else '') +
                        (user_name + '/' if user_name else '') +
                        base_image_name)
     base_image_tag  = github_pr_number
-    image_name      = (PROJECT_IMAGE[image_type] +
-                       ('.' + github_pr_baseref if github_pr_baseref != 'master' else ''))
+    image_name      = PROJECT_IMAGE[image_type]
     image_repo      = ((host_name + '/' if host_name else '') +
                        (user_name + '/' if user_name else '') +
                        image_name)
