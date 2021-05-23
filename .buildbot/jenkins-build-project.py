@@ -312,7 +312,7 @@ def build_private_project(image_type, exp):
                 m = re.match('.*---> Running in ([0-9a-f]+)$', line['stream'])
                 if m:
                     layer_sha256 = m.group(1)
-                print(line['stream'])
+                print(line['stream'], end='', flush=True)
 
             if 'error' in line:
                 # Tag the latest successful image layer for easier debugging
