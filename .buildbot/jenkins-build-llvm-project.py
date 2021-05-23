@@ -332,7 +332,7 @@ def setup_private_llvm(image_type, exp):
                 #print(line['stream'] if 'stream' in line else '', end='', flush=True)
                 if 'stream' in line:
                     # Keep track of the latest successful image layer
-                    m = re.match('.*---> Running in ([0-9a-f]+)', line)
+                    m = re.match('.*---> Running in ([0-9a-f]+)$', line['stream'])
                     if m:
                         layer_sha256 = m.group(1)
                     print(line['stream'])
