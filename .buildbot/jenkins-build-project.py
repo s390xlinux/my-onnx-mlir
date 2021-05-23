@@ -309,7 +309,7 @@ def build_private_project(image_type, exp):
             #print(line['stream'] if 'stream' in line else '', end='', flush=True)
             if 'stream' in line:
                 # Keep track of the latest successful image layer
-                m = re.match('.*---> Running in ([0-9a-f]+)$', line['stream'])
+                m = re.match('^\s*---> ([0-9a-f]+)$', line['stream'])
                 if m:
                     layer_sha256 = m.group(1)
                 print(line['stream'], end='', flush=True)
@@ -320,6 +320,8 @@ def build_private_project(image_type, exp):
                     image_layer = 'sha256:' + layer_sha256
                     logging.info('tagging %s -> %s', image_layer, image_full)
                     docker_api.tag(image_layer, image_repo, image_tag, force=True)
+                else:
+                    logging.info('no successful image layer for tagging')
                 raise Exception(line['error'])
 
         id = docker_api.images(name = image_full, all = False, quiet=True)
