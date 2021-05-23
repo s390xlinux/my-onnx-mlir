@@ -317,8 +317,9 @@ def build_private_project(image_type, exp):
             if 'error' in line:
                 # Tag the latest successful image layer for easier debugging
                 if layer_sha256:
-                    logging.info('tagging %s -> %s', layer_sha256, image_full)
-                    docker_api.tag(layer_sha256, image_repo, image_tag, force=True)
+                    image_layer = 'sha256:' + layer_sha256
+                    logging.info('tagging %s -> %s', image_layer, image_full)
+                    docker_api.tag(image_layer, image_repo, image_tag, force=True)
                 raise Exception(line['error'])
 
         id = docker_api.images(name = image_full, all = False, quiet=True)
