@@ -9,13 +9,13 @@ jobs:
     - name: checkout onnx-mlir source
       uses: actions/checkout@v2
       with:
-        path: $GITHUB_WORKSPACE/onnx-mlir
+        path: onnx-mlir
 
     - name: checkout gh-pages branch
       uses: actions/checkout@v2
       with:
         ref:  gh-pages
-        path: $GITHUB_WORKSPACE/gh-pages
+        path: gh-pages
 
     - name: install doxygen and rsync
       run: |
@@ -28,6 +28,7 @@ jobs:
 
     - name: doxygen API html
       run: |
+        mkdir -p $GITHUB_WORKSPACE/gh-pages/doxygen_html
         INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/OnnxMlirRuntime.h \
         HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OnnxMlirRuntime \
         doxygen $GITHUB_WORKSPACE/onnx-mlir/Doxyfile
