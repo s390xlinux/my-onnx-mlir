@@ -25,7 +25,7 @@ jobs:
     - name: copy docs into gh-pages
       run: |
         rsync -ahvP --delete --exclude .* \
-	      $GITHUB_WORKSPACE/onnx-mlir/docs/ $GITHUB_WORKSPACE/gh-pages/
+              $GITHUB_WORKSPACE/onnx-mlir/docs/ $GITHUB_WORKSPACE/gh-pages/
 
     - name: doxygen API html
       run: |
