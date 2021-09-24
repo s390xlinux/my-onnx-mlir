@@ -49,5 +49,7 @@ jobs:
     - name: commit updated gh-pages
       run: |
         cd $GITHUB_WORKSPACE/gh-pages
+        git config user.email "onnx-mlir@onnx.ai"
+        git config user.name "onnx-mlir"
         git add .
         git commit -m "Updated by GitHub Action"
