@@ -1,0 +1,45 @@
+name: GitHub Action Doxygen Jekyll
+
+on: [push, pull_request]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout onnx-mlir source
+      uses: actions/checkout@v2
+      with:
+        path: $GITHUB_WORKSPACE/onnx-mlir
+
+    - name: checkout gh-pages branch
+      uses: actions/checkout@v2
+      with:
+        ref:  gh-pages
+	path: $GITHUB_WORKSPACE/gh-pages
+
+    - name: install doxygen and rsync
+      run: |
+        apt-get update
+        apt-get install -y doxygen rsync
+
+    - name: copy docs into gh-pages
+      run: |
+	rsync -ahvP --delete $GITHUB_WORKSPACE/onnx-mlir/docs/ $GITHUB_WORKSPACE/gh-pages/
+
+    - name: doxygen API html
+      run: |
+	INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/OnnxMlirRuntime.h \
+	HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OnnxMlirRuntime \
+	doxygen $GITHUB_WORKSPACE/onnx-mlir/Doxyfile
+	INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/onnx-mlir/Runtime/OMTensor.h \
+	HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensor \
+	doxygen $GITHUB_WORKSPACE/onnx-mlir/Doxyfile
+	INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/onnx-mlir/Runtime/OMTensorList.h \
+	HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensorList \
+	doxygen $GITHUB_WORKSPACE/onnx-mlir/Doxyfile
+
+    - name: commit updated gh-pages
+      run: |
+	cd $GITHUB_WORKSPACE/gh-pages
+        git add .
+        git commit -m "Updated by GitHub Action"
