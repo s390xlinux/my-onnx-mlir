@@ -29,14 +29,14 @@ jobs:
     - name: doxygen API html
       run: |
         mkdir -p $GITHUB_WORKSPACE/gh-pages/doxygen_html
-        INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/OnnxMlirRuntime.h \
-        HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OnnxMlirRuntime \
+        export INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/OnnxMlirRuntime.h
+        export HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OnnxMlirRuntime
         doxygen $GITHUB_WORKSPACE/onnx-mlir/Doxyfile
-        INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/onnx-mlir/Runtime/OMTensor.h \
-        HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensor \
+        export INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/onnx-mlir/Runtime/OMTensor.h
+        export HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensor
         doxygen $GITHUB_WORKSPACE/onnx-mlir/Doxyfile
-        INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/onnx-mlir/Runtime/OMTensorList.h \
-        HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensorList \
+        export INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/onnx-mlir/Runtime/OMTensorList.h
+        export HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensorList
         doxygen $GITHUB_WORKSPACE/onnx-mlir/Doxyfile
 
     - name: commit updated gh-pages
