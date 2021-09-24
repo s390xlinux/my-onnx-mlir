@@ -33,18 +33,18 @@ jobs:
         mkdir -p $GITHUB_WORKSPACE/gh-pages/doxygen_html
         export INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/OnnxMlirRuntime.h
         export HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OnnxMlirRuntime
-	echo $INPUT
-	echo $HTML_OUTPUT
+        echo $INPUT
+        echo $HTML_OUTPUT
         doxygen $GITHUB_WORKSPACE/onnx-mlir/Doxyfile
         export INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/onnx-mlir/Runtime/OMTensor.h
         export HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensor
-	echo $INPUT
-	echo $HTML_OUTPUT
+        echo $INPUT
+        echo $HTML_OUTPUT
         doxygen $GITHUB_WORKSPACE/onnx-mlir/Doxyfile
         export INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/onnx-mlir/Runtime/OMTensorList.h
         export HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensorList
-	echo $INPUT
-	echo $HTML_OUTPUT
+        echo $INPUT
+        echo $HTML_OUTPUT
         doxygen $GITHUB_WORKSPACE/onnx-mlir/Doxyfile
 
     - name: commit updated gh-pages
