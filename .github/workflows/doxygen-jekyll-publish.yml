@@ -53,3 +53,4 @@ jobs:
         git config user.name "onnx-mlir"
         git add .
         git commit -m "Updated by GitHub Action"
+        git push
