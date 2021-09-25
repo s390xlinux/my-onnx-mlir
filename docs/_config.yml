@@ -2,7 +2,7 @@ theme: jekyll-theme-minimal
 defaults:
   -
     scope:
-      path: "README.md"
+      path: "ONNXAI.md"
     values:
       permalink: "index.html"
 
