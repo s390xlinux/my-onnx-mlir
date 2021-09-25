@@ -36,6 +36,7 @@ jobs:
          echo INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/OnnxMlirRuntime.h; \
          echo HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OnnxMlirRuntime) | \
         doxygen -
+        # Add Jekyll front matter to pass the html through Jekyll processing
         sed -i -e '1s/^/---\ntitle: $title\nlayout: default\n---\n/' \
             $GITHUB_WORKSPACE/gh-pages/doxygen_html/OnnxMlirRuntime/index.html
 
@@ -43,6 +44,7 @@ jobs:
          echo INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/onnx-mlir/Runtime/OMTensor.h; \
          echo HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensor) | \
         doxygen -
+        # Add Jekyll front matter to pass the html through Jekyll processing
         sed -i -e '1s/^/---\ntitle: $title\nlayout: default\n---\n/' \
             $GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensor/_o_m_tensor_8h.html
 
@@ -50,6 +52,7 @@ jobs:
          echo INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/onnx-mlir/Runtime/OMTensorList.h; \
          echo HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensorList) | \
         doxygen -
+        # Add Jekyll front matter to pass the html through Jekyll processing
         sed -i -e '1s/^/---\ntitle: $title\nlayout: default\n---\n/' \
             $GITHUB_WORKSPACE/gh-pages/doxygen_html/OMTensorList/_o_m_tensor_list_8h.html
 
@@ -60,5 +63,5 @@ jobs:
         git config user.name "Doxygen Bot (GitHub Action)"
         git add .
         # Don't fail if the branch is already up-to-date
-        git commit -m "Push onnx-mlir/docs and doxygen updates into gh-pages" || true
+        git commit -m "Push docs and doxygen updates into gh-pages branch" || true
         git push
