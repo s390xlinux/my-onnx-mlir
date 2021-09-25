@@ -4,7 +4,7 @@ defaults:
     scope:
       path: "README.md"
     values:
-      permalink: "README.html"
+      permalink: "index.html"
 
 # Doxygen generated per-file doc references.
 include: ["_*.html"]
