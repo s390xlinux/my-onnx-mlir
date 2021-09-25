@@ -24,7 +24,8 @@ jobs:
 
     - name: copy docs into gh-pages
       run: |
-        rsync -ahvP --delete --filter 'protect .*' \
+        # delete everything in gh-pages that are not in docs but keep .git*
+        rsync -ahvP --delete --filter 'protect .git*' \
               $GITHUB_WORKSPACE/onnx-mlir/docs/ $GITHUB_WORKSPACE/gh-pages/
 
     - name: doxygen API html
@@ -52,5 +53,6 @@ jobs:
         git config user.email "onnx-mlir@onnx.ai"
         git config user.name "onnx-mlir"
         git add .
-        git commit -m "Updated by GitHub Action"
+	# Don't fail if the branch is already up-to-date
+        git commit -m "Updated by GitHub Action" || true
         git push
