@@ -67,3 +67,5 @@ jobs:
         # Don't fail if the branch is already up-to-date
         git commit -m "Push docs and doxygen updates into gh-pages branch" || true
         git push
+        # Updated gh-pages branch will be published automatically unless
+        # .nojekyll is created so we are done here
