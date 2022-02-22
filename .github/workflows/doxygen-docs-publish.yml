@@ -39,8 +39,10 @@ jobs:
          echo HTML_OUTPUT=$GITHUB_WORKSPACE/gh-pages/doxygen_html/OnnxMlirRuntime) | \
         doxygen -
         # Add Jekyll front matter to pass the html through Jekyll processing
-        sed -i -e '1s/^/---\nlayout: default\n---\n/' \
-            $GITHUB_WORKSPACE/gh-pages/doxygen_html/OnnxMlirRuntime/index.html
+        for html in $(find $GITHUB_WORKSPACE/gh-pages/doxygen_html/OnnxMlirRuntime \
+                           -name "*.html"); do \
+            sed -i -e '1s/^/---\nlayout: default\n---\n/' $html; \
+        done
 
         (cat  $GITHUB_WORKSPACE/onnx-mlir/Doxyfile; \
          echo INPUT=$GITHUB_WORKSPACE/onnx-mlir/include/onnx-mlir/Runtime/OMTensor.h; \
